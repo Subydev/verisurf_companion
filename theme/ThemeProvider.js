@@ -3,30 +3,21 @@ import { connect } from 'react-redux';
 import EStyleSheet from 'react-native-extended-stylesheet';
 import dark from './dark';
 import light from './light';
+import { changeTheme } from './themeActions';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 class ThemeProvider extends React.Component {
-  async componentDidMount() {
-    try {
-      console.log('ThemeProvider: componentDidMount');
-      const persistedData = await AsyncStorage.getItem('persist:root');
-      if (persistedData) {
-        const { dark_mode } = JSON.parse(persistedData);
-        console.log('ThemeProvider: Persisted dark_mode', dark_mode);
-        this.buildTheme(dark_mode === 'true');
-      }
-    } catch (error) {
-      console.log('ThemeProvider: Error retrieving persisted data', error);
-    }
+  componentDidMount() {
+    this.buildTheme(this.props.dark_mode);
   }
 
   componentDidUpdate(prevProps) {
     if (prevProps.dark_mode !== this.props.dark_mode) {
       console.log('ThemeProvider: dark_mode changed, rebuilding theme');
       this.buildTheme(this.props.dark_mode);
+      this.props.changeTheme(); // Dispatch the action
     }
   }
-
   buildTheme(darkMode) {
     console.log('ThemeProvider: Building theme, darkMode:', darkMode);
     const theme = darkMode ? dark : light;
@@ -35,14 +26,14 @@ class ThemeProvider extends React.Component {
 
   render() {
     console.log('ThemeProvider: Rendering');
-    return null;
+    return this.props.children;
   }
 }
+const mapDispatchToProps = {
+  changeTheme,
+};
+const mapStateToProps = (state) => ({
+  dark_mode: state.dark_mode,
+});
 
-function mapStateToProps(state) {
-  return {
-    dark_mode: state.dark_mode,
-  };
-}
-
-export default connect(mapStateToProps)(ThemeProvider);
+export default connect(mapStateToProps, mapDispatchToProps)(ThemeProvider);

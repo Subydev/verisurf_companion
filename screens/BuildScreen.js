@@ -14,8 +14,10 @@ import { RFPercentage, RFValue } from "react-native-responsive-fontsize";
 import { withNavigationFocus } from 'react-navigation';
 import { connect } from 'react-redux';
 import EStyleSheet from 'react-native-extended-stylesheet';
-import { ScreenOrientation } from 'expo';
-longPressed = 0;
+// import * as ScreenOrientation from 'expo-screen-orientation';
+
+
+let longPressed = 0;
 
 
 class BuildScreen extends React.Component {
@@ -97,19 +99,19 @@ class BuildScreen extends React.Component {
       return;
     }
     else if(this.props.IPAddress == '' && this.props.isFocused){
-      ScreenOrientation.unlockAsync()
+      // ScreenOrientation.unlockAsync()
       return;
     }
 
     else if(prevProps.isFocused === false && this.props.isFocused === true){
       this.ws = new WebSocket("ws://" + this.props.IPAddress + ":" + this.props.port);
-      ScreenOrientation.unlockAsync()
+      // ScreenOrientation.unlockAsync()
       this.setState({disconnected: false, underlayColor: 'red'})
       this.beginStream();
     }
 
     if(this.props.isFocused === false && this.ws != undefined){
-      ScreenOrientation.lockAsync(ScreenOrientation.Orientation.PORTRAIT_UP)
+      // ScreenOrientation.lockAsync(ScreenOrientation.Orientation.PORTRAIT_UP)
       this.ws.close();
     }
 
@@ -117,18 +119,22 @@ class BuildScreen extends React.Component {
 
       this.setState({underlayColor: EStyleSheet.value('$bgColor')})
     }
-
+    if (Platform.OS !== 'web') {
+      // Use ScreenOrientation module only on native platforms
+      ScreenOrientation.unlockAsync();
+      // ...
+    }
   }
   componentDidMount() {
-    ScreenOrientation.unlockAsync()
-    ScreenOrientation.getOrientationAsync().then(resolve => {
-      var ori = resolve.orientation
-      if(ori != "PORTRAIT_UP" || ori != "PORTRAIT_DOWN"){
-        this.setState({isLandscape: false})
-      }
+    // ScreenOrientation.unlockAsync()
+    // ScreenOrientation.getOrientationAsync().then(resolve => {
+    //   var ori = resolve.orientation
+    //   if(ori != "PORTRAIT_UP" || ori != "PORTRAIT_DOWN"){
+    //     this.setState({isLandscape: false})
+    //   }
 
-    }, reject => console.log(reject))
-    ScreenOrientation.addOrientationChangeListener(this._orientationListener)
+    // }, reject => console.log(reject))
+    // ScreenOrientation.addOrientationChangeListener(this._orientationListener)
 
     if(this.props.buildTutorial === false){
         Alert.alert(
@@ -149,15 +155,15 @@ class BuildScreen extends React.Component {
     this.beginStream();
   }
 
-  _orientationListener = orientation => {
-    var ori = orientation.orientationInfo.orientation
-    if(ori == "LANDSCAPE_LEFT" || ori == "LANDSCAPE_RIGHT" || ori == "LANDSCAPE"){
-      this.setState({isLandscape: true})
-    }
-    else{
-      this.setState({isLandscape: false})
-    }
-  }
+  // _orientationListener = orientation => {
+  //   var ori = orientation.orientationInfo.orientation
+  //   if(ori == "LANDSCAPE_LEFT" || ori == "LANDSCAPE_RIGHT" || ori == "LANDSCAPE"){
+  //     this.setState({isLandscape: true})
+  //   }
+  //   else{
+  //     this.setState({isLandscape: false})
+  //   }
+  // }
 
   beginStream = () => {
     this._isMounted = true;

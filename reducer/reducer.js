@@ -53,12 +53,15 @@ const initialState = {
           ...state,
           [action.name]: !action.value,
         }
-  
+        case 'CHANGE_THEME':
+          return state;
       case 'CHANGE_VALUE':
         return{
           ...state,
           [action.name]: action.value
         }
+        case 'THEME_CHANGED':
+          return state;
       default:
           return state;
     }

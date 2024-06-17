@@ -31,10 +31,8 @@ class MeasureScreen extends React.Component {
       this.ws = new WebSocket("ws://localhost:" + this.props.port);
     }
     this.onPress = this.onPress.bind(this);
-    state = {
-      notification: {},
-    };
     this.state = {
+      notification: {},
       isLoading: true,
       measType: "",
       xEcho: "0",
@@ -46,9 +44,6 @@ class MeasureScreen extends React.Component {
       dRadiusEcho: "0",
       dNameEcho: "0",
       longPress: 0,
-    };
-
-    this.state = {
       backgroundColor: EStyleSheet.value("$bgColor"),
       underlayColor: EStyleSheet.value("$bgColor"),
       scaler: 1,
@@ -83,13 +78,13 @@ class MeasureScreen extends React.Component {
     }
   };
 
-  onPressOut = (val) => {
+  onPressOut = () => {
     this._isMounted &&
       this.setState({ backgroundColor: EStyleSheet.value("$bgColor") });
 
-    if (longPressed === 1) {
+    if (this.state.longPressed === 1) {
       this.ws.send("<measure_trigger />");
-      longPressed = 0;
+      this.setState({ longPressed: 0 });
     }
   };
 
@@ -98,7 +93,7 @@ class MeasureScreen extends React.Component {
     this.ws.send("<measure_trigger />");
     Vibration.vibrate([0, 50]);
 
-    longPressed = 1;
+    this.setState({ longPressed: 1 });
   };
 
   componentDidUpdate(prevProps) {

@@ -88,6 +88,8 @@ class SettingsScreen extends React.Component {
   };
 
   render() {
+    const { dark_mode, themeswitch } = this.props;
+
     return (
       //SETUP FOR CONTENT -----------------------------------
       <View style={{ flex: 1 }}>
@@ -350,16 +352,15 @@ class SettingsScreen extends React.Component {
                     >
                       Dark Mode
                     </Text>
-                    <Switch
-                      style={styles.switchSt}
-                      value={this.props.dark_mode}
-                      onValueChange={() =>
-                        this.props.themeswitch(
-                          this.props.dark_mode,
-                          "dark_mode"
-                        )
-                      }
-                    />
+                    <View style={styles.container}>
+
+        <Switch
+    style={styles.switchSt}
+    value={dark_mode}
+    onValueChange={() => themeswitch(!dark_mode, 'dark_mode')}
+        />
+      </View>
+      
                   </View>
                   <View>
                     <Text></Text>
@@ -873,9 +874,11 @@ function mapDispatchToProps(dispatch) {
     updating_value: (value, name) =>
       dispatch({ type: "UPDATING_VALUE", value, name }),
     finalizetol: (text) => dispatch({ type: "FINALIZE_TOL", text }),
+    themeswitch: (value, name) => dispatch({ type: 'THEME_SWITCH', value, name }),
+
     //toggleswitch: (value, name) => dispatch({ type: 'TOGGLE_SWITCH', value, name }),
-    themeswitch: (value, name) =>
-      dispatch({ type: "THEME_SWITCH", value, name }),
+    // themeswitch: (value, name) =>
+    //   dispatch({ type: "THEME_SWITCH", value, name }),
     change_value_only: (value, name) =>
       dispatch({ type: "CHANGE_VALUE", value, name }),
   };
