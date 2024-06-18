@@ -3,7 +3,7 @@ import { ActivityIndicator, StatusBar, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import EStyleSheet from 'react-native-extended-stylesheet';
 import SignInScreen from './SignIn';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createStackNavigator } from '@react-navigation/stack';
 import MainTabNavigator from './MainTabNavigator';
 
 class AuthLoadingScreen extends React.Component {
@@ -42,7 +42,7 @@ const styles = EStyleSheet.create({
   },
 });
 
-const Stack = createNativeStackNavigator();
+const Stack = createStackNavigator();
 
 function AuthStack() {
   console.log('AuthStack: Rendering');

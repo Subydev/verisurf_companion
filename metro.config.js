@@ -8,6 +8,7 @@ module.exports = (async () => {
       ...defaultConfig.resolver,
       extraNodeModules: {
         crypto: require.resolve('react-native-crypto'),
+        art: '@react-native-community/art',
       },
     },
   };

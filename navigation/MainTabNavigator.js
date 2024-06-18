@@ -1,7 +1,7 @@
 import React from 'react';
 import { Platform } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator  } from '@react-navigation/bottom-tabs';
 import TabBarIcon from '../components/TabBarIcon';
 import BuildScreen from '../screens/BuildScreen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -12,7 +12,7 @@ import Scanner from '../screens/Scanner';
 import Colors from '../constants/Colors';
 
 const Stack = createStackNavigator();
-const Tab = createBottomTabNavigator();
+const Tab = createBottomTabNavigator ();
 
 const screenOptions = {
   headerShown: false,
