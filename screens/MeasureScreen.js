@@ -7,14 +7,9 @@ import EStyleSheet from "react-native-extended-stylesheet";
 import { connect } from "react-redux";
 import registerForPushNotificationsAsync from "../components/notifications";
 import { Picker } from "@react-native-picker/picker";
-import {
-  Text,
-  View,
-  TouchableHighlight,
-  Vibration,
-  Alert,
-} from "react-native";
+import { Text, View, TouchableHighlight, Vibration, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useIsFocused } from "@react-navigation/native";
 
 let error_detector = true;
 
@@ -41,6 +36,7 @@ const MeasureScreen = (props) => {
 
   useFocusEffect(
     useCallback(() => {
+      console.log("MeasureScreen focused");
       if (props.IPAddress === "") {
         return;
       }
@@ -52,9 +48,7 @@ const MeasureScreen = (props) => {
         underlayColor: EStyleSheet.value("$bgColor"),
       }));
 
-      const newWs = new WebSocket(
-        `ws://${props.IPAddress}:${props.port}`
-      );
+      const newWs = new WebSocket(`ws://${props.IPAddress}:${props.port}`);
       setWs(newWs);
       beginStream(newWs);
 
@@ -76,8 +70,10 @@ const MeasureScreen = (props) => {
         ...prevState,
         underlayColor: "red",
       }));
-      const measSend = `<measure_${value} />`;
-      ws.send(measSend);
+      if (props.IPAddress !== "") {
+        const measSend = `<measure_${value} />`;
+        ws.send(measSend);
+      }
     } else {
       setState((prevState) => ({
         ...prevState,
@@ -91,12 +87,14 @@ const MeasureScreen = (props) => {
       ...prevState,
       backgroundColor: "red",
     }));
-
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(`<measure_set_${props.single_or_average} />`);
-      ws.send("<measure_trigger />");
-      Vibration.vibrate([0, 10]);
+    if(props.IPAddress !== ""){
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(`<measure_set_${props.single_or_average} />`);
+        ws.send("<measure_trigger />");
+        Vibration.vibrate([0, 10]);
+      }
     }
+
   };
 
   const onPressOut = () => {
@@ -105,7 +103,8 @@ const MeasureScreen = (props) => {
       backgroundColor: EStyleSheet.value("$bgColor"),
     }));
 
-    if (state.longPressed === 1) {
+    if (state.longPressed === 1 && props.IPAddress !== "") {
+      console.log("Sending measure_trigger from long press out");
       ws.send("<measure_trigger />");
       setState((prevState) => ({
         ...prevState,
@@ -115,6 +114,10 @@ const MeasureScreen = (props) => {
   };
 
   const onLongPress = () => {
+    if (props.IPAddress === "") {
+      return;
+    }
+    console.log("Sending measure_set_cloud & measure_trigger from long press");
     ws.send("<measure_set_cloud />");
     ws.send("<measure_trigger />");
     Vibration.vibrate([0, 50]);
@@ -137,7 +140,7 @@ const MeasureScreen = (props) => {
       newWs.send(`<device_info id="${props.device_number}" />`);
     };
 
-    if (isMounted) {
+    if (isMounted && props.IPAddress !== "") {
       newWs.onmessage = ({ data }) => {
         if (data.includes("device_info")) {
           const XMLParser = require("react-xml-parser");
@@ -161,159 +164,165 @@ const MeasureScreen = (props) => {
           if (dTempRaw != null) {
             dTemp = parseFloat(dTempRaw).toFixed(1);
           }
-       
 
-            if (dRadiusRaw != null) {
-              dRadius = parseFloat(dRadiusRaw).toFixed(3);
-              }
-              if (xVal.length > 7 || yVal.length > 7 || zVal.length > 7) {
-              const biggest =
+          if (dRadiusRaw != null) {
+            dRadius = parseFloat(dRadiusRaw).toFixed(3);
+          }
+          if (xVal.length > 7 || yVal.length > 7 || zVal.length > 7) {
+            const biggest =
               xVal.length > yVal.length
-              ? xVal.length > zVal.length
-              ? xVal.length
-              : zVal.length
-              : yVal.length > zVal.length
-              ? yVal.length
-              : zVal.length;
-              setState((prevState) => ({
+                ? xVal.length > zVal.length
+                  ? xVal.length
+                  : zVal.length
+                : yVal.length > zVal.length
+                ? yVal.length
+                : zVal.length;
+            setState((prevState) => ({
               ...prevState,
               scaler: parseFloat(1 - (biggest - 7) * 0.08),
-              }));
-              } else {
-              setState((prevState) => ({
+            }));
+          } else {
+            setState((prevState) => ({
               ...prevState,
               scaler: 1,
-              }));
-              }
-              setState((prevState) => ({
-              ...prevState,
-              xEcho: xVal,
-              yEcho: yVal,
-              zEcho: zVal,
-              dNameEcho: dName,
-              dTempEcho: dTemp,
-              dInfoEcho: dInfo,
-              dRadiusEcho: dRadius,
-              }));
-              setTimeout(() => {
-              if (isMounted) {
+            }));
+          }
+          setState((prevState) => ({
+            ...prevState,
+            xEcho: xVal,
+            yEcho: yVal,
+            zEcho: zVal,
+            dNameEcho: dName,
+            dTempEcho: dTemp,
+            dInfoEcho: dInfo,
+            dRadiusEcho: dRadius,
+          }));
+          setTimeout(() => {
+            if (isMounted) {
               newWs.send(<device_info id="${props.device_number}" />);
-              }
-              }, props.response_time);
-              }
-              };
-              }
-              };
-              useEffect(() => {
-              if (Constants.isDevice && props.is_registered === false) {
-              registerForPushNotificationsAsync().then((value) => {
-              props.change_value_only(value, "is_registered");
-              });
-              }
-              if (props.IPAddress === "") {
-              Alert.alert(
-              "Preview Mode",
-              "Since IP was left blank, you have entered preview mode. The app is not connected, but you may freely roam the components.\n\nYou may sign out now, or visit settings and sign out later.",
-              [
-              {
-              text: "Sign Out",
-              onPress: async () => {
-              await AsyncStorage.removeItem("userToken");
-              props.navigation.navigate("Auth");
-              },
-              },
-              { text: "Continue" },
-              ]
-              );
-              }
-              }, [props.IPAddress, props.is_registered, props.navigation]);
-              useEffect(() => {
-              if (props.statusColor === "red") {
-              setState((prevState) => ({
-              ...prevState,
-              underlayColor: EStyleSheet.value("$bgColor"),
-              }));
-              } else if (props.statusColor !== "red" && state.meastype !== "none") {
-              setState((prevState) => ({
-              ...prevState,
-              underlayColor: "red",
-              }));
-              }
-              }, [props.statusColor, state.meastype]);
-              const {
-              xEcho,
-              yEcho,
-              zEcho,
-              dNameEcho,
-              dInfoEcho,
-              dTempEcho,
-              dRadiusEcho,
-              meastype,
-              backgroundColor,
-              underlayColor,
-              scaler,
-              } = state;
-              return (
-              <TouchableHighlight
-              underlayColor={underlayColor}
-              onPress={onPress}
-              onPressOut={onPressOut}
-              onLongPress={onLongPress}
-              delayLongPress={500}
-              style={[styles.container, { backgroundColor: EStyleSheet.value("$bgColor") }]}
-              >
-              <React.Fragment>
-              <View
-              style={{
-              flexDirection: "column",
-              height: 90,
-              borderColor: EStyleSheet.value("$textColor"),
-              borderWidth: 0,
-              alignItems: "center",
-              justifyContent: "space-around",
-              paddingTop: 50,
-              }}
-              >
-              <Text style={styles.footerTitle}>Tap - Single | Hold - Continuous</Text>
-              <ActivityIndicator
-              size="small"
-              color="#00ff00"
-              animating={props.statusColor === "red" ? props.IPAddress !== "" : false}
-              />
-              </View>
-              <View key={props.dark_mode}>
-              <Picker
-              selectedValue={meastype}
-              itemStyle={styles.pickerItem}
-              style={styles.pickerStyle}
-              onValueChange={onPickerValueChange}
-              >
-              <Picker.Item label={"Select Feature Type..."} value={"none"} />
-              <Picker.Item label={"Point"} value={"point"} />
-              <Picker.Item label={"Line"} value={"line"} />
-              <Picker.Item label={"Circle"} value={"circle"} />
-              <Picker.Item label={"Spline"} value={"spline"} />
-              <Picker.Item label={"Ellipse"} value={"ellipse"} />
-              <Picker.Item label={"Slot"} value={"slot"} />
-              <Picker.Item label={"Plane"} value={"plane"} />
-              <Picker.Item label={"Sphere"} value={"sphere"} />
-              <Picker.Item label={"Cylinder"} value={"cylinder"} />
-              <Picker.Item label={"Cone"} value={"cone"} />
-              </Picker>
-              </View>
-              <View style={{ flexDirection: "row", flex: 1 }}>
-              <View style={styles.droLeftBox}>
-              <Text adjustsFontSizeToFit={true} style={styles.droText}>
+            }
+          }, props.response_time);
+        }
+      };
+    }
+  };
+  useEffect(() => {
+    if (Constants.isDevice && props.is_registered === false) {
+      registerForPushNotificationsAsync().then((value) => {
+        props.change_value_only(value, "is_registered");
+      });
+    }
+    // if (props.IPAddress === "") {
+    //   Alert.alert(
+    //     "Preview Mode",
+    //     "Since IP was left blank, you have entered preview mode. The app is not connected, but you may freely roam the components.\n\nYou may sign out now, or visit settings and sign out later.",
+    //     [
+    //       {
+    //         text: "Sign Out",
+    //         onPress: async () => {
+    //           await AsyncStorage.removeItem("userToken");
+    //           props.navigation.navigate("Auth");
+    //         },
+    //       },
+    //       { text: "Continue" },
+    //     ]
+    //   );
+    // }
+  }, [props.IPAddress, props.is_registered, props.navigation]);
+  useEffect(() => {
+    if (props.statusColor === "red") {
+      setState((prevState) => ({
+        ...prevState,
+        underlayColor: EStyleSheet.value("$bgColor"),
+      }));
+    } else if (props.statusColor !== "red" && state.meastype !== "none") {
+      setState((prevState) => ({
+        ...prevState,
+        underlayColor: "red",
+      }));
+    }
+  }, [props.statusColor, state.meastype]);
+  const {
+    xEcho,
+    yEcho,
+    zEcho,
+    dNameEcho,
+    dInfoEcho,
+    dTempEcho,
+    dRadiusEcho,
+    meastype,
+    backgroundColor,
+    underlayColor,
+    scaler,
+  } = state;
+  return (
+    <TouchableHighlight
+      underlayColor={underlayColor}
+      onPress={onPress}
+      onPressOut={onPressOut}
+      onLongPress={onLongPress}
+      delayLongPress={500}
+      style={[
+        styles.container,
+        { backgroundColor: EStyleSheet.value("$bgColor") },
+      ]}
+    >
+      <React.Fragment>
+        <View
+          style={{
+            flexDirection: "column",
+            height: 90,
+            borderColor: EStyleSheet.value("$textColor"),
+            borderWidth: 0,
+            alignItems: "center",
+            justifyContent: "space-around",
+            paddingTop: 50,
+          }}
+        >
+          <Text style={styles.footerTitle}>
+            Tap - Single | Hold - Continuous
+          </Text>
+          <ActivityIndicator
+            size="small"
+            color="#00ff00"
+            animating={
+              props.statusColor === "red" ? props.IPAddress !== "" : false
+            }
+          />
+        </View>
+        <View key={props.dark_mode}>
+          <Picker
+            selectedValue={meastype}
+            itemStyle={styles.pickerItem}
+            style={styles.pickerStyle}
+            onValueChange={onPickerValueChange}
+          >
+            <Picker.Item label={"Select Feature Type..."} value={"none"} />
+            <Picker.Item label={"Point"} value={"point"} />
+            <Picker.Item label={"Line"} value={"line"} />
+            <Picker.Item label={"Circle"} value={"circle"} />
+            <Picker.Item label={"Spline"} value={"spline"} />
+            <Picker.Item label={"Ellipse"} value={"ellipse"} />
+            <Picker.Item label={"Slot"} value={"slot"} />
+            <Picker.Item label={"Plane"} value={"plane"} />
+            <Picker.Item label={"Sphere"} value={"sphere"} />
+            <Picker.Item label={"Cylinder"} value={"cylinder"} />
+            <Picker.Item label={"Cone"} value={"cone"} />
+          </Picker>
+        </View>
+        <View style={{ flexDirection: "row", flex: 1 }}>
+          <View style={styles.droLeftBox}>
+            <Text adjustsFontSizeToFit={true} style={styles.droText}>
               X:
-              </Text>
-              <Text adjustsFontSizeToFit={true} style={styles.droText}>
+            </Text>
+            <Text adjustsFontSizeToFit={true} style={styles.droText}>
               Y:
-              </Text>
-              <Text adjustsFontSizeToFit={true} style={styles.droText}>
+            </Text>
+            <Text adjustsFontSizeToFit={true} style={styles.droText}>
               Z:
-              </Text>
-              </View>
-              <View style={styles.droRightBox}>
+            </Text>
+          </View>
+          <View style={styles.droRightBox}>
             <Text
               numberOfLines={1}
               style={{
@@ -323,7 +332,7 @@ const MeasureScreen = (props) => {
                 color: EStyleSheet.value("$textColor"),
               }}
             >
-              {xEcho}
+              {props.IPAddress === "" ? "188.7101" : {xEcho}}
             </Text>
             <Text
               numberOfLines={1}
@@ -335,7 +344,7 @@ const MeasureScreen = (props) => {
                 color: EStyleSheet.value("$textColor"),
               }}
             >
-              {yEcho}
+              {props.IPAddress === "" ? "32.1902" : {yEcho}}
             </Text>
             <Text
               numberOfLines={1}
@@ -346,7 +355,7 @@ const MeasureScreen = (props) => {
                 color: EStyleSheet.value("$textColor"),
               }}
             >
-              {zEcho}
+              {props.IPAddress === "" ? "-4.0199" : {zEcho}}
             </Text>
           </View>
         </View>
@@ -360,24 +369,34 @@ const MeasureScreen = (props) => {
             paddingBottom: 2,
             paddingTop: 6,
             backgroundColor: EStyleSheet.value("$cardColor"),
+
             opacity: 0.8,
             borderTopWidth: 0,
             borderRadius: 8,
           }}
         >
           <View
-            style={{
-              borderRadius: 5,
-              width: 10,
-              height: 10,
-              backgroundColor: props.statusColor,
-            }}
+           style={{
+            borderRadius: 5,
+            width: 10,
+            height: 10,
+            backgroundColor:
+              props.IPAddress === "" ? "#00ff00" : props.statusColor,
+          }} 
           ></View>
           <Text style={styles.footerText}>
-            Connected To: {dNameEcho} ({dInfoEcho})
+          Connected To:{" "}
+              {props.IPAddress === ""
+                ? "Master3DGage "
+                : `${state.dNameEcho} (${state.dInfoEcho})`}
+            {/* Connected To: {dNameEcho} ({dInfoEcho}) */}
           </Text>
           <Text style={styles.footerText}>
-            Probe Radius: {dRadiusEcho} | Temperature: {dTempEcho}
+          Probe Radius:{" "}
+              {props.IPAddress === ""
+                ? "3mm | 67.4°F"
+                : `${state.dRadiusEcho}mm | Temperature: ${state.dTempEcho}°F`}
+            {/* Probe Radius: {dRadiusEcho} | Temperature: {dTempEcho} */}
           </Text>
         </View>
       </React.Fragment>
@@ -405,65 +424,65 @@ function mapStateToProps(state) {
 
 function mapDispatchToProps(dispatch) {
   return {
-  change_value_only: (value, name) =>
-  dispatch({ type: "CHANGE_VALUE", value, name }),
+    change_value_only: (value, name) =>
+      dispatch({ type: "CHANGE_VALUE", value, name }),
   };
-  }
-  export default connect(mapStateToProps, mapDispatchToProps)(MeasureScreen);
-  const styles = EStyleSheet.create({
+}
+export default connect(mapStateToProps, mapDispatchToProps)(MeasureScreen);
+const styles = EStyleSheet.create({
   container: {
-  flex: 1,
+    flex: 1,
   },
   text: {
-  color: "$textColor",
+    color: "$textColor",
   },
   pickerItem: {
-  color: "$textColor",
-  height: 120,
-  fontSize: 32,
-  alignContent: "center",
-  flexDirection: "column",
+    color: "$textColor",
+    height: 120,
+    fontSize: 32,
+    alignContent: "center",
+    flexDirection: "column",
   },
   pickerStyle: {
-  color: "$textColor",
-  borderColor: "$textColor",
-  borderWidth: 1,
-  borderRadius: 50,
-  borderBottomWidth: 1,
+    color: "$textColor",
+    borderColor: "$textColor",
+    borderWidth: 1,
+    borderRadius: 50,
+    borderBottomWidth: 1,
   },
   droText: {
-  color: "$textColor",
-  fontSize: RFValue(58),
-  justifyContent: "space-around",
-  opacity: 1,
+    color: "$textColor",
+    fontSize: RFValue(58),
+    justifyContent: "space-around",
+    opacity: 1,
   },
   droLeftBox: {
-  justifyContent: "space-around",
-  flexDirection: "column",
-  width: 109,
-  alignItems: "flex-start",
-  borderWidth: 0,
-  borderColor: "$textColor",
-  paddingTop: 20,
-  paddingLeft: 5,
+    justifyContent: "space-around",
+    flexDirection: "column",
+    width: 109,
+    alignItems: "flex-start",
+    borderWidth: 0,
+    borderColor: "$textColor",
+    paddingTop: 20,
+    paddingLeft: 5,
   },
   droRightBox: {
-  flex: 1,
-  justifyContent: "space-around",
-  flexDirection: "column",
-  borderWidth: 0,
-  borderColor: "$textColor",
-  alignItems: "flex-end",
-  paddingRight: 5,
-  paddingTop: 20,
+    flex: 1,
+    justifyContent: "space-around",
+    flexDirection: "column",
+    borderWidth: 0,
+    borderColor: "$textColor",
+    alignItems: "flex-end",
+    paddingRight: 5,
+    paddingTop: 20,
   },
   footerText: {
-  fontSize: RFValue(12),
-  color: "$textColor",
+    fontSize: RFValue(12),
+    color: "$textColor",
   },
   footerTitle: {
-  fontSize: RFValue(16),
-  color: "$textColor",
-  paddingBottom: RFValue(7),
+    fontSize: RFValue(16),
+    color: "$textColor",
+    paddingBottom: RFValue(7),
   },
-  });
+});

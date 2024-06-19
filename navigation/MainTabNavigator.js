@@ -10,6 +10,7 @@ import MeasureScreen from '../screens/MeasureScreen';
 import AutoScreen from '../screens/AutoScreen';
 import Scanner from '../screens/Scanner';
 import Colors from '../constants/Colors';
+import DetailScreen from '../screens/DetailScreen'; // Import DetailScreen
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator ();
@@ -33,6 +34,7 @@ function SettingsStackScreen() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Scanner" component={Scanner} />
+      <Stack.Screen name="Details" component={DetailScreen} />
     </Stack.Navigator>
   );
 }

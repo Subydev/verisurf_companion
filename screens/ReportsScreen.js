@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Input } from "react-native-elements";
 import { connect } from "react-redux";
 import { useFocusEffect } from "@react-navigation/native";
+import reportData from "../constants/reportData.json";
 
 var SECTIONS = [];
 var deleted = [];
@@ -39,6 +40,7 @@ const ReportsScreen = (props) => {
   const [deviceHeight, setDeviceHeight] = useState(Dimensions.get("window").height);
   const [totalPlans, setTotalPlans] = useState(0);
   const [allPlans, setAllPlans] = useState([]);
+  const [isReportLoaded, setIsReportLoaded] = useState(false);
 
   const searchForm = useRef();
   const currentPlan = useRef(undefined);
@@ -76,6 +78,8 @@ const ReportsScreen = (props) => {
 
   const _GetData = useCallback(
     (q) => {
+      if (props.IPAddress !== '') {
+
       ws.current.onopen = () => {
         if (q === undefined) {
           ws.current.send("<inspect_plan_list />");
@@ -182,10 +186,58 @@ const ReportsScreen = (props) => {
           }
         }
       };
-    },
-    [animValue, planNumber]
-  );
+    } else {
+      console.log('No IP Address')
+      // No WebSocket connection, use simulator data
+      const simulatorData = reportData.inspect_plan_info.plan.plan_objects;
+      setAllPlans((prevPlans) => [
+        ...prevPlans,
+        <Picker.Item
+          label="Inspection Report"
+          value="id"
+          key="attr"
+        />,
+      ]);
+      // Clear the existing sections
+      SECTIONS = [];
 
+      // Populate the sections array with simulator data
+      setPlanNumber(0);
+      setPlanName("Inspection Report");
+      console.log(planName)
+      console.log(simulatorData)
+      simulatorData.forEach((object) => {
+        SECTIONS.push({
+          title: object.name,
+          content: {
+            
+            // Add any additional properties you want to display
+          },
+        });
+      });
+      
+
+      // Update the state with the new sections
+      setActiveSections([]);
+      setAnimValue(SECTIONS.map(() => new Animated.Value(0)));
+      setRefreshing(false);
+    }
+  },
+  [props.IPAddress, props.port]
+);
+
+  const _getSimulatorData = (type) => {
+    switch (type) {
+      case 'inspect_object_info':
+        return sampleData.inspect_object_info;
+      case 'inspect_plan_info':
+        return sampleData.inspect_plan_info;
+      case 'inspect_plan_list':
+        return sampleData.inspect_plan_list;
+      default:
+        return null;
+    }
+  };
   const _xmlParse = (data) => {
     var options = {
       attributeNamePrefix: "",
@@ -214,6 +266,7 @@ const ReportsScreen = (props) => {
 
   const onRefresh = (q) => {
     setRefreshing(true);
+    setIsReportLoaded(true); 
     CLEAR_DATA();
     if (search.length > 0) {
       Keyboard.dismiss();
@@ -255,8 +308,8 @@ const ReportsScreen = (props) => {
           }}
         >
           <Ionicons
-            name="ios-arrow-down"
-            size={RFValue(30)}
+            name="chevron-down-outline"
+            size={RFValue(12)}
             color={EStyleSheet.value("$textColor")}
           />
         </Animated.View>
@@ -265,67 +318,138 @@ const ReportsScreen = (props) => {
   };
 
   const _renderContent = (section) => {
-    let views = [];
-    let properties = section["content"];
+    if (props.IPAddress !== '') {
+      let views = [];
+      let properties = section["content"];
+  
+      if (Object.keys(properties).length !== 0) {
+        for (var key in properties) {
+          let name = key;
+          let nom = properties[key]["nom"];
+          let meas = properties[key]["measured"];
+          let dev = properties[key]["deviation"];
+          
+  
+          views.push(
+            <React.Fragment key={name}>
+              <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
+                <Text numberOfLines={1} style={styles.category}>
+                  {name}
+                </Text>
+              </View>
+  
+              <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
+                <Text numberOfLines={1} style={styles.category}>
+                  {parseFloat(nom).toFixed(props.decimal_places)}
+                </Text>
+              </View>
+  
+              <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
+                <Text numberOfLines={1} style={styles.category}>
+                  {parseFloat(meas).toFixed(props.decimal_places)}
+                </Text>
+              </View>
+  
+              <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
+                <Text numberOfLines={1} style={styles.category}>
+                  {parseFloat(dev).toFixed(props.decimal_places)}
+                </Text>
+              </View>
+            </React.Fragment>
+          );
+        }
+      }
+  
+      return (
+        <View style={styles.dataContainer}>
+          <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
+            <Text style={styles.category}></Text>
+          </View>
+  
+          <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
+            <Text style={styles.category}>Nom.</Text>
+          </View>
+  
+          <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
+            <Text style={styles.category}>Act.</Text>
+          </View>
+  
+          <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
+            <Text style={styles.category}>Dev.</Text>
+          </View>
+  
+          {views}
+        </View>
+      );
+    } else {
+      // No IP address provided, use simulator data
+      const object = reportData.inspect_object_info.object.find(
+        (obj) => obj.name === section.title
+      );
+  
+      if (!object) {
+        return null;
+      }
+      let views = [];
 
-    if (Object.keys(properties).length !== 0) {
-      for (var key in properties) {
-        let name = key;
-        let nom = properties[key]["nom"];
-        let meas = properties[key]["measured"];
-        let dev = properties[key]["deviation"];
-
+      object.properties.forEach((property) => {
         views.push(
-          <React.Fragment key={name}>
+          <React.Fragment key={property.name}>
             <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
               <Text numberOfLines={1} style={styles.category}>
-                {name}
+                {property.name}
               </Text>
             </View>
-
+  
             <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
               <Text numberOfLines={1} style={styles.category}>
-                {parseFloat(nom).toFixed(props.decimal_places)}
+                {property.nominal !== undefined
+                  ? parseFloat(property.nominal).toFixed(props.decimal_places)
+                  : "-"}
               </Text>
             </View>
-
+  
             <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
               <Text numberOfLines={1} style={styles.category}>
-                {parseFloat(meas).toFixed(props.decimal_places)}
+                {property.measured !== undefined
+                  ? parseFloat(property.measured).toFixed(props.decimal_places)
+                  : "-"}
               </Text>
             </View>
-
+  
             <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
               <Text numberOfLines={1} style={styles.category}>
-                {parseFloat(dev).toFixed(props.decimal_places)}
+                {property.deviation !== undefined
+                  ? parseFloat(property.deviation).toFixed(props.decimal_places)
+                  : "-"}
               </Text>
             </View>
           </React.Fragment>
         );
-      }
+      });
+  
+      return (
+        <View style={styles.dataContainer}>
+          <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
+            <Text style={styles.category}></Text>
+          </View>
+  
+          <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
+            <Text style={styles.category}>Nom.</Text>
+          </View>
+  
+          <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
+            <Text style={styles.category}>Act.</Text>
+          </View>
+  
+          <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
+            <Text style={styles.category}>Dev.</Text>
+          </View>
+  
+          {views}
+        </View>
+      );
     }
-
-    return (
-      <View style={styles.dataContainer}>
-        <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
-          <Text style={styles.category}></Text>
-        </View>
-
-        <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
-          <Text style={styles.category}>Nom.</Text>
-        </View>
-
-        <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
-          <Text style={styles.category}>Act.</Text>
-        </View>
-
-        <View style={[styles.data, { width: deviceWidth / 4.5 }]}>
-          <Text style={styles.category}>Dev.</Text>
-        </View>
-
-        {views}
-      </View>
-    );
   };
 
   const _updateSections = (activeSections) => {
@@ -373,6 +497,12 @@ const ReportsScreen = (props) => {
           borderBottomWidth={1}
         />
       </View>
+
+      {!isReportLoaded && (
+        <Text style={{color: "white", fontSize: RFPercentage(2), paddingBottom: 10, alignSelf: "center"}}>Swipe Down to Load Example Report!
+
+  </Text>
+)}
 
       <View
         key={props.dark_mode}
@@ -454,16 +584,18 @@ const ReportsScreen = (props) => {
         }}
       >
         <View
-          style={{
+           style={{
             borderRadius: 5,
             width: 10,
             height: 10,
-            backgroundColor: props.statusColor,
-          }}
+            backgroundColor:
+              props.IPAddress === "" ? "#00ff00" : props.statusColor,
+          }} 
         ></View>
-        <Text style={styles.footerText}>Active Plan: {planName}</Text>
+        <Text style={styles.footerText}>Active Plan: `{props.IPAddress === "" ? `Inspection Report` : `${planName}`}</Text>
+
         <Text style={styles.footerText}>
-          Objects in Plan: {numOfObjects} | Total Plans: {totalPlans}
+          Objects in Plan: `{props.IPAddress === "" ? 17 : `${numOfObjects}`}` | Total Plans: {totalPlans}
         </Text>
       </View>
     </View>
@@ -559,8 +691,8 @@ const styles = EStyleSheet.create({
     justifyContent: "flex-start",
   },
   headerText: {
-    fontSize: RFValue(18),
-    fontWeight: "600",
+    fontSize: RFValue(16),
+     fontWeight: "normal",
     color: "$textColor",
   },
   searchForm: {

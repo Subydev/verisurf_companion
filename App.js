@@ -13,20 +13,9 @@ import { NavigationContainer } from '@react-navigation/native';
 import configureStore from './Store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ThemeProvider from './theme/ThemeProvider';
+import dark from './theme/dark';
+import light from './theme/light';
 
-const dark = {
-  $theme: 'dark',
-  $textColor: 'white',
-  $bgColor: 'black',
-  $cardColor: '#333333',
-};
-
-const light = {
-  $theme: 'light',
-  $textColor: 'black',
-  $bgColor: 'white',
-  $cardColor: '#f0f0f0',
-};
 
 export default function App(props) {
   const { store, persistor } = configureStore();
@@ -39,7 +28,7 @@ export default function App(props) {
         await SplashScreen.preventAutoHideAsync();
         console.log('App.js: Splash screen prevented from auto hiding');
         await loadResourcesAsync();
-        await setupAsyncStorage();
+        await setTheme();
       } catch (e) {
         console.error('App.js: Error during preparation', e);
       } finally {
@@ -63,13 +52,34 @@ export default function App(props) {
           darkMode = true;
         }
       });
+      // Use the imported theme definitions
       EStyleSheet.build(darkMode ? dark : light);
     } catch (error) {
       console.error('App.js: Error setting up AsyncStorage', error);
+      // Use the imported light theme as fallback
       EStyleSheet.build(light);
     }
   };
 
+  const setTheme = async () => {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const stores = await AsyncStorage.multiGet(keys);
+      let darkMode = false;
+      stores.forEach((result, i, store) => {
+        let key = store[i][0];
+        let value = store[i][1];
+        if (value && value.includes("\"dark_mode\":\"true\"")) {
+          darkMode = true;
+        }
+      });
+      console.log('Dark mode:', darkMode);
+      EStyleSheet.build(darkMode ? dark : light);
+    } catch (error) {
+      console.error('App.js: Error setting up theme', error);
+      EStyleSheet.build(light);
+    }
+  };
   const onLayoutRootView = useCallback(async () => {
     console.log('App.js: onLayoutRootView called');
     if (appIsReady) {
@@ -81,7 +91,6 @@ export default function App(props) {
   if (!appIsReady) {
     return null;
   }
-
   console.log('App.js: Rendering app');
   return (
     <Provider store={store}>

@@ -18,9 +18,10 @@ import {
   Input,
   SocialIcon,
   Tooltip,
+  ListItem,
   Icon,
 } from "react-native-elements";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { connect } from "react-redux";
 import EStyleSheet from "react-native-extended-stylesheet";
 import { RFPercentage, RFValue } from "react-native-responsive-fontsize";
@@ -28,11 +29,29 @@ import { Ionicons } from "@expo/vector-icons";
 import { Dimensions } from "react-native";
 import AppData from "../app.json";
 
-class SettingsScreen extends React.Component {
-  static navigationOptions = () => ({
-    header: null,
-  });
+const AppearanceList = [
+  { title: 'Appearance Options', icon: 'av-timer' },
+];
 
+const MeasureSettingsList = [
+  { title: 'Measure Settings', icon: 'flight-takeoff' },
+  { title: 'Build Settings', icon: 'flight-takeoff' },
+];
+
+const ReportSettingsList = [
+  { title: 'Report Settings', icon: 'flight-takeoff' },
+  { title: 'Auto-Inspect Settings', icon: 'flight-takeoff' },
+];
+
+const DeviceSettingsList = [
+  { title: 'Device Settings', icon: 'flight-takeoff' },
+];
+
+const ContactList = [
+  { title: 'Contact Us', icon: 'flight-takeoff' },
+];
+
+class SettingsScreen extends React.Component {
   constructor() {
     super();
     this.myRef = React.createRef();
@@ -87,12 +106,39 @@ class SettingsScreen extends React.Component {
     });
   };
 
+  renderList = (list) => {
+    return list.map((item, i) => (
+      <ListItem
+        key={i}
+        containerStyle={[
+          styles.listItemContainer,
+          i === 0 ? { borderTopLeftRadius: 10, borderTopRightRadius: 10 } : {},
+          i === list.length - 1 ? { borderBottomLeftRadius: 10, borderBottomRightRadius: 10 } : {},
+        ]}
+        // bottomDivider={i !== list.length - 1}
+        // onPress={() => this.handlePress(item.title)}
+        onPress={() => {
+          const { navigate } = this.props.navigation;
+          const title = item.title;
+          navigate('Details', { title });
+        }}
+        underlayColor="#444"
+      >
+        <Icon name={item.icon} color="white" />
+        <ListItem.Content>
+          <ListItem.Title style={{ color: 'white' }}>{item.title}</ListItem.Title>
+        </ListItem.Content>
+        <ListItem.Chevron />
+      </ListItem>
+    ));
+  };
+
   render() {
     const { dark_mode, themeswitch } = this.props;
 
     return (
       //SETUP FOR CONTENT -----------------------------------
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: EStyleSheet.value("$bgColor") }}>
         <Modal
           animationType="slide"
           transparent={true}
@@ -299,9 +345,32 @@ class SettingsScreen extends React.Component {
           </Text> */}
               </TouchableOpacity>
             </View>
+</View>
+            <View style={styles.containerList}>
+        <View style={styles.sectionList}>
+          <Text style={styles.sectionTitleList}>Application</Text>
+          {this.renderList(AppearanceList)}
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitleList}>Measurements</Text>
+          {this.renderList(MeasureSettingsList)}
+        </View>
+        <View style={styles.sectionList}>
+          <Text style={styles.sectionTitleList}>Reports</Text>
+          {this.renderList(ReportSettingsList)}
+        </View>
+        <View style={styles.sectionList}>
+          <Text style={styles.sectionTitleList}>Devices</Text>
+          {this.renderList(DeviceSettingsList)}
+        </View>
+        <View style={styles.sectionList}>
+          <Text style={styles.sectionTitleList}>Resources</Text>
+          {this.renderList(ContactList)}
+        </View>
+      </View>
 
             {/* SECTION Appearance */}
-            <View style={styles.container}>
+            <View style={styles.container2}>
               <View style={styles.containerSection}>
                 <Text
                   style={styles.textSection}
@@ -310,7 +379,7 @@ class SettingsScreen extends React.Component {
                 >
                   Appearance
                 </Text>
-                <Tooltip
+                {/* <Tooltip
                   height={RFValue(155)}
                   width={RFValue(310)}
                   popover={
@@ -337,30 +406,30 @@ class SettingsScreen extends React.Component {
                     name="help-outline"
                     color={EStyleSheet.value("$textColor")}
                   />
-                </Tooltip>
+                </Tooltip> */}
               </View>
 
               {/* COMPONENTS */}
-              <View>
+              <View style={{marginTop:RFPercentage(-10)}}>
                 {/* Theme Swithcer */}
                 <View style={(styles.containerInSection, { height: 150 })}>
                   <View style={styles.containerInnerSection}>
-                    <Text
+                    {/* <Text
                       style={styles.text}
                       numberOfLines={1}
                       ellipsizeMode={"tail"}
                     >
                       Dark Mode
-                    </Text>
-                    <View style={styles.container}>
-
-        <Switch
-    style={styles.switchSt}
-    value={dark_mode}
-    onValueChange={() => themeswitch(!dark_mode, 'dark_mode')}
-        />
-      </View>
-      
+                    </Text> */}
+                    {/* <View style={styles.container}>
+                      <Switch
+                        style={styles.switchSt}
+                        value={dark_mode}
+                        onValueChange={() =>
+                          themeswitch(!dark_mode, "dark_mode")
+                        }
+                      />
+                    </View> */}
                   </View>
                   <View>
                     <Text></Text>
@@ -448,22 +517,20 @@ class SettingsScreen extends React.Component {
                     >
                       Decimal Places
                     </Text>
-                    <Picker
-                      selectedValue={this.props.decimal_places.toString()}
-                      style={styles.picker}
-                      itemStyle={styles.pickerItem}
-                      onValueChange={(itemValue, itemIndex) => {
-                        this.props.change_value_only(
-                          itemValue,
-                          "decimal_places"
-                        );
-                      }}
-                    >
-                      <Picker.Item label="1" value={"1"} />
-                      <Picker.Item label="2" value={"2"} />
-                      <Picker.Item label="3" value={"3"} />
-                      <Picker.Item label="4" value={"4"} />
-                    </Picker>
+                    <View style={styles.pickerContainer}>
+    <Picker
+      selectedValue={this.props.decimal_places.toString()}
+      style={styles.picker}
+      itemStyle={styles.pickerItem}
+      onValueChange={(itemValue, itemIndex) => {
+        this.props.change_value_only(itemValue, "decimal_places");
+      }}
+    >
+      <Picker.Item label="1" value="1" />
+      <Picker.Item label="2" value="2" />
+      <Picker.Item label="3" value="3" />
+      <Picker.Item label="4" value="4" />
+    </Picker>
                   </View>
                 </View>
 
@@ -488,7 +555,7 @@ class SettingsScreen extends React.Component {
                       inputContainerStyle={styles.inputContainer}
                       inputStyle={styles.inputText}
                       labelStyle={styles.text}
-                      containerStyle={styles.containerInnerSection} // Merged containerStyle here
+                      containerStyle={styles.inputInnerContainer} // Merged containerStyle here
                       Label={"Build Tolerance"}
                       disabled={false}
                       keyboardType="numeric"
@@ -562,6 +629,7 @@ class SettingsScreen extends React.Component {
                     minimumTrackTintColor={
                       this.props.dark_mode ? "#B13034" : "black"
                     }
+                    thumbStyle={{ height: 20, width: 20 }}
                     minimumValue={300}
                     value={this.props.auto_response_time}
                     onValueChange={(value) =>
@@ -634,6 +702,7 @@ class SettingsScreen extends React.Component {
                   </Text>
                   <Slider
                     step={10}
+                    thumbStyle={{ height: 20, width: 20 }}
                     disabled={false}
                     style={styles.sliderSt}
                     thumbTintColor={this.props.dark_mode ? "white" : "#000"}
@@ -660,6 +729,7 @@ class SettingsScreen extends React.Component {
                   </Text>
                   <Slider
                     disabled={false}
+                    thumbStyle={{ height: 20, width: 20 }}
                     style={styles.sliderSt}
                     thumbTintColor={this.props.dark_mode ? "white" : "#000"}
                     maximumValue={8}
@@ -819,20 +889,34 @@ class SettingsScreen extends React.Component {
             </View>
             {/* Powered by Section */}
             <View
-              style={{
-                borderTopWidth: 0,
-                borderColor: "white",
-                flexDirection: "row",
-                justifyContent: "space-evenly",
-                paddingTop: 5,
-                paddingBottom: 20,
-              }}
+              style={
+                {
+                  // borderTopWidth: 0,
+                  // borderColor: "white",
+                  // flexDirection: "row",
+                  // justifyContent: "space-evenly",
+                  // paddingTop: 5,
+                  // paddingBottom: 20,
+                  // backgroundColor: "pink"
+                }
+              }
             >
               <SocialIcon
                 button
                 title="Powered by the Verisurf API"
+                backgroundColor="pink"
                 raised={false}
-                light={this.props.dark_mode ? false : true}
+                padding={10}
+                // iconStyle={{
+                //   borderRadius: 0,
+                //   backgroundColor: 'transparent',
+                //   borderWidth: 0,
+                //   shadowOpacity: 0,
+                //   elevation: 0,
+                // }}""
+                underlayColor="$cardColor"
+                style={{ backgroundColor: "rgb(39,39,39)" }}
+                // light={this.props.dark_mode ? false : true}
                 type="github"
                 onPress={() =>
                   Linking.openURL("https://github.com/verisurf/verisurf-api")
@@ -874,11 +958,13 @@ function mapDispatchToProps(dispatch) {
     updating_value: (value, name) =>
       dispatch({ type: "UPDATING_VALUE", value, name }),
     finalizetol: (text) => dispatch({ type: "FINALIZE_TOL", text }),
-    themeswitch: (value, name) => dispatch({ type: 'THEME_SWITCH', value, name }),
+    themeswitch: (value, name) =>
+      dispatch({ type: "THEME_SWITCH", value, name }),
 
-    //toggleswitch: (value, name) => dispatch({ type: 'TOGGLE_SWITCH', value, name }),
-    // themeswitch: (value, name) =>
-    //   dispatch({ type: "THEME_SWITCH", value, name }),
+    toggleswitch: (value, name) =>
+      dispatch({ type: "TOGGLE_SWITCH", value, name }),
+    themeswitch: (value, name) =>
+      dispatch({ type: "THEME_SWITCH", value, name }),
     change_value_only: (value, name) =>
       dispatch({ type: "CHANGE_VALUE", value, name }),
   };
@@ -887,10 +973,94 @@ function mapDispatchToProps(dispatch) {
 export default connect(mapStateToProps, mapDispatchToProps)(SettingsScreen);
 
 const styles = EStyleSheet.create({
+  containerList: {
+    flex: 1,
+    // backgroundColor: '#000',
+    padding: 10,
+  },
+  sectionList: {
+    paddingBottom: RFPercentage(5),
+  },
+  sectionTitleList: {
+    fontWeight: "400",
+    color: "lightgray",
+    fontSize: RFValue(14),
+    paddingLeft: 5,
+    paddingBottom: 10,
+  },
+  listItemContainer: {
+    overflow: "hidden",
+    backgroundColor: "#333333",
+    paddingBottom: 20,
+    flex: 1,
+    backgroundColor: "#000",
+    padding: 10,
+  },
+  section: {
+    paddingBottom: RFPercentage(5),
+  },
+  sectionTitle: {
+    fontWeight: "400",
+    color: "lightgray",
+    fontSize: RFValue(14),
+    paddingLeft: 5,
+    paddingBottom: 10,
+  },
+  listItemContainer: {
+    overflow: "hidden",
+    backgroundColor: "#333333",
+    paddingBottom: 20,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderRadius: 10,
+    borderColor: "white",
+    overflow: "hidden",
+    height: 40,
+    justifyContent: "center",
+  },
+  picker: {
+    color: "white",
+    fontSize: 17,
+    textAlign: "center",
+  },
+  pickerItem: {
+    color: "white",
+    fontSize: 17,
+    textAlign: "center",
+  },
+  container: {
+    marginBottom: RFValue(10),
+    shadowColor: "$cardColor",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    
+    shadowOpacity: 0.18,
+    shadowRadius: 1.0,
+    elevation: 1,
+    backgroundColor: "$cardColor",
+    borderRadius: 5,
+  },
+  container2: {
+    marginBottom: RFValue(10),
+    shadowColor: "$cardColor",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    
+    shadowOpacity: 0.18,
+    shadowRadius: 1.0,
+    elevation: 1,
+    backgroundColor: "$cardColor",
+    borderRadius: 5,
+  },
   inputText: {
-    fontSize: RFValue(18),
-    color: "$textColor",
-    opacity: 1,
+    color: "white",
+    fontSize: 17,
+    textAlign: "center",
   },
   inputView: {
     flex: 1,
@@ -901,14 +1071,12 @@ const styles = EStyleSheet.create({
     color: "$textColor",
   },
   inputContainer: {
-    flex: 1,
     borderWidth: 1,
-    borderRadius: 2,
-    alignSelf: "flex-end",
-    marginRight: RFValue(20),
-    width: RFValue(50),
-    height: RFValue(30),
-    //backgroundColor: ,
+    borderRadius: 10,
+    borderColor: "white",
+    overflow: "hidden",
+    height: 40,
+    justifyContent: "center",
   },
   scrollContainer: {
     flex: 1,
@@ -919,8 +1087,9 @@ const styles = EStyleSheet.create({
     margin: RFValue(15),
   },
   Headercontainer: {
-    padding: RFValue(50),
-    height: RFValue(200),
+    padding: RFValue(20),
+    height: RFValue(100),
+    paddingBottom: 20,
   },
   sliderStuff: {
     alignContent: "center",
@@ -934,8 +1103,8 @@ const styles = EStyleSheet.create({
 
   imagebox: {
     flex: 1,
-    height: RFValue(140),
-    width: RFValue(140),
+    height: RFValue(80),
+    width: RFValue(80),
     resizeMode: "contain",
     alignSelf: "center",
   },
@@ -985,6 +1154,9 @@ const styles = EStyleSheet.create({
     borderBottomWidth: 0.1,
     opacity: 1,
     borderColor: "$bgColor",
+  },
+  inputInnerContainer: {
+    paddingHorizontal: 10,
   },
   containerEndSection: {
     flex: 1,
@@ -1059,23 +1231,22 @@ const styles = EStyleSheet.create({
   sliderSt: {
     marginHorizontal: RFValue(40),
   },
-  picker: {
-    //transform: [{scaleX: RFValue(1.3)}, {scaleY: RFValue(1.3)}],
-    borderColor: "$textColor",
-    color: "$textColor",
-    opacity: 1,
-    marginRight: RFValue(10),
-    width: 100,
-  },
-  pickerItem: {
-    color: "$textColor",
-    height: RFValue(35),
-    width: RFValue(30),
-    fontSize: 18,
-    opacity: 1,
-    alignContent: "center",
-    flexDirection: "column",
-  },
+  // picker: {
+  //   //transform: [{scaleX: RFValue(1.3)}, {scaleY: RFValue(1.3)}],
+  //   color: "$textColor",
+  //   opacity: 1,
+  //   marginRight: RFValue(14),
+  //   width: 130,
+  //   },
+  // pickerItem: {
+  //   color: "$textColor",
+  //   height: RFValue(35),
+  //   width: RFValue(30),
+  //   fontSize: 18,
+  //   opacity: 1,
+  //   alignContent: "center",
+  //   flexDirection: "column",
+  // },
   colorCircle: {
     margin: RFValue(10),
     padding: 10,

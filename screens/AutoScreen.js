@@ -14,6 +14,7 @@ import {
 let propsInObj = 0;
 let objNames = [];
 let objValues = [];
+import reportData from "../constants/reportData.json";
 
 const AutoScreen = (props) => {
   const [isMounted, setIsMounted] = useState(false);
@@ -32,6 +33,8 @@ const AutoScreen = (props) => {
     backgroundColor: EStyleSheet.value("$bgColor"),
     underlayColor: EStyleSheet.value("$bgColor"),
     disconnected: true,
+    objNames: [],
+    objValues: [],
   });
 
   const onPress = () => {
@@ -51,6 +54,16 @@ const AutoScreen = (props) => {
   useFocusEffect(
     useCallback(() => {
       if (props.IPAddress === "") {
+        const simulatorData = reportData.inspect_object_info.object.find(
+          (obj) => obj.name === "Circle1"
+        );
+        if (simulatorData) {
+          const properties = simulatorData.properties.map((prop) => ({
+            name: prop.name,
+            deviation: prop.deviation !== undefined ? prop.deviation : 0,
+          }));
+          _renderObjInfo(properties);
+        }
         setState((prevState) => ({
           ...prevState,
           underlayColor: EStyleSheet.value("$bgColor"),
@@ -130,32 +143,32 @@ const AutoScreen = (props) => {
     propsInObj = vals.length;
     const propsArr = [];
     for (let i = 0; i < propsInObj; i++) {
-      const name = vals[i]["attr"]["name"];
+      const name = vals[i]["attr"] ? vals[i]["attr"]["name"] : vals[i].name;
       const deviation =
-        vals[i]["attr"]["deviation"] !== undefined ||
-        vals[i]["attr"]["deviation"] !== null
-          ? parseFloat(vals[i]["attr"]["deviation"]).toFixed(
-              props.decimal_places
-            )
+        vals[i]["attr"] && vals[i]["attr"]["deviation"] !== undefined
+          ? parseFloat(vals[i]["attr"]["deviation"]).toFixed(props.decimal_places)
+          : vals[i].deviation !== undefined
+          ? vals[i].deviation.toFixed(props.decimal_places)
           : parseFloat(0).toFixed(props.decimal_places);
-
+  
       const objArr = { [name]: deviation };
       propsArr.push(objArr);
     }
     const obj = Object.assign({}, ...propsArr);
-    objNames = Object.keys(obj);
-    objValues = Object.values(obj);
-    if (propsInObj > 10 && state.responsiveText === RFPercentage(4.1)) {
-      setState((prevState) => ({
-        ...prevState,
-        responsiveText: RFPercentage(propsInObj / 5),
-      }));
-    } else if (propsInObj < 11 && state.responsiveText !== RFPercentage(4.1)) {
-      setState((prevState) => ({
-        ...prevState,
-        responsiveText: RFPercentage(4.1),
-      }));
-    }
+    const objNames = Object.keys(obj);
+    const objValues = Object.values(obj);
+  
+    setState((prevState) => ({
+      ...prevState,
+      objNames,
+      objValues,
+      responsiveText:
+        propsInObj > 10 && prevState.responsiveText === RFPercentage(4.1)
+          ? RFPercentage(propsInObj / 5)
+          : propsInObj < 11 && prevState.responsiveText !== RFPercentage(4.1)
+          ? RFPercentage(4.1)
+          : prevState.responsiveText,
+    }));
   };
 
   const _xmlParse = (d) => {
@@ -193,7 +206,7 @@ const AutoScreen = (props) => {
         numberOfLines={1}
         style={[styles.droText, { fontSize: state.responsiveText }]}
       >
-        {objNames[i] + ":"}
+      {props.IPAddress === "" ? state.objNames[i] + ":" : objNames[i] + ":"}
       </Text>
     );
   }
@@ -202,17 +215,19 @@ const AutoScreen = (props) => {
   for (let i = 0; i < propsInObj; i++) {
     valuesArr.push(
       <Text key={i} style={[styles.droText, { fontSize: state.responsiveText }]}>
-        {objValues[i]}
+      {props.IPAddress === "" ? state.objValues[i] : objValues[i]}
       </Text>
     );
   }
 
   return (
+    
     <TouchableHighlight
       underlayColor={state.underlayColor}
       onPress={onPress}
       onLongPress={onLongPress}
       style={styles.container}
+      backgroundColor={EStyleSheet.value("$bgColor")}
     >
       <React.Fragment>
         <View
@@ -244,20 +259,23 @@ const AutoScreen = (props) => {
             }
           />
           <Text style={styles.justMeasuredText}>
-            {state.currMeasNameEcho}
+          {props.IPAddress === "" ? `Circle1` :  `${state.currMeasNameEcho}`}
+            
           </Text>
         </View>
 
         <View style={styles.tableView}>
-          <View style={styles.droLeftBox}>{state.hasMeasEcho && namesArr}</View>
-          <View style={styles.droRightBox}>
-            {state.hasMeasEcho && valuesArr}
-          </View>
+        <View style={styles.droLeftBox}>
+    {props.IPAddress === "" ? namesArr : state.hasMeasEcho && namesArr}
+  </View>
+  <View style={styles.droRightBox}>
+    {props.IPAddress === "" ? valuesArr : state.hasMeasEcho && valuesArr}
+  </View>
         </View>
 
         <View style={styles.upNextView}>
           <Text style={styles.upNextText}>
-            Up Next: {state.nextMeasNameEcho}
+            Up Next: {props.IPAddress === "" ? 'Circle2' :  `${state.nextMeasNameEcho}`}
           </Text>
         </View>
 
@@ -276,19 +294,21 @@ const AutoScreen = (props) => {
           }}
         >
           <View
-            style={{
-              borderRadius: 5,
-              width: 10,
-              height: 10,
-              backgroundColor: props.statusColor,
-            }}
+           style={{
+            borderRadius: 5,
+            width: 10,
+            height: 10,
+            backgroundColor:
+              props.IPAddress === "" ? "#00ff00" : props.statusColor,
+          }} 
           ></View>
+              <Text style={styles.footerText}>
+              Active Plan: {props.IPAddress === "" ? `CMM Master Plan_1  PlanID: 1` : `${state.planNameEcho} (${state.planIDEcho})`}
+            </Text>
           <Text style={styles.footerText}>
-            Active Plan: {state.planNameEcho} ({state.planIDEcho})
-          </Text>
-          <Text style={styles.footerText}>
-            Objects in Plan: {state.objectsInPlanEcho} | Run State:{" "}
+          Objects in Plan: {props.IPAddress === "" ? 17 : `${state.objectsInPlanEcho}`} | Run State:{" "}
             {state.runStateEcho}
+
           </Text>
         </View>
       </React.Fragment>

@@ -8,6 +8,6 @@
 export default {
     $theme: 'dark',
     $textColor: 'white',
-    $bgColor: 'black',
+    $bgColor: 'rgb(39,39,39)',
     $cardColor: '#333333',
   }
