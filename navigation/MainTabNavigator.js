@@ -18,18 +18,15 @@ import ReportSettingsScreen from '../screens/SettingsScreens/ReportSettingsScree
 import AutoInspectSettingsScreen from '../screens/SettingsScreens/AutoInspectSettingsScreen';
 import NotificationSettingsScreen from '../screens/SettingsScreens/NotificationSettingsScreen';
 import ContactusSettingsScreen from '../screens/SettingsScreens/ContactusSettingsScreen';
-import StyleSheet from 'react-native-extended-stylesheet';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { NavigationContainer } from '@react-navigation/native'
+
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator ();
 
 const screenOptions = {
   headerShown: false,
-  // cardStyle: { backgroundColor: '#fff' },
 };
-
-
 
 function BuildStackScreen() {
   console.log('BuildStackScreen: Rendering');
@@ -44,20 +41,7 @@ function SettingsStackScreen() {
   console.log('SettingsStackScreen: Rendering');
   return (
 
-    <Stack.Navigator
-    screenOptions={{
-      headerShown: false,
-      cardStyle: { backgroundColor: StyleSheet.value("$bgColor")  },
-      cardStyleInterpolator: ({ current: { progress } }) => ({
-        cardStyle: {
-          opacity: progress.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0, 1],
-          }),
-        },
-      }),
-    }}
-  >
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Scanner" component={Scanner} />
       <Stack.Screen name="Details" component={DetailScreen} />
@@ -102,7 +86,6 @@ function ReportsStackScreen() {
 export default function MainTabNavigator() {
   console.log('MainTabNavigator: Rendering');
   return (
-    <SafeAreaView style={styles.safeArea}>
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused }) => {
@@ -162,13 +145,5 @@ export default function MainTabNavigator() {
         options={{ tabBarLabel: 'Settings', headerShown: false  }}
       />
     </Tab.Navigator>
-    </SafeAreaView>
-
   );
 }
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Colors.tabBar,
-  },
-});

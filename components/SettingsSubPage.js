@@ -24,10 +24,11 @@ const SettingsSubPage = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress}>
+      <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <Ionicons
             name="arrow-back"
             size={24}
+            paddingLeft={20}
             color={EStyleSheet.value("$textColor")}
           />
         </TouchableOpacity>
@@ -77,16 +78,25 @@ const styles = EStyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     marginBottom: 20,
+    position: 'relative',
   },
   title: {
     fontSize: 20,
     fontWeight: "bold",
     color: "$textColor",
-    marginLeft: 20,
+    marginBottom: 20, // Add margin to the title
+
+  },
+  backButton: {
+    position: "absolute",
+    left: 10,
   },
   content: {
     backgroundColor: "$cardColor",
+        marginTop: 20, // Add margin to the content container
+
     borderRadius: 10,
     padding: 20,
     width: "90%",

@@ -36,6 +36,7 @@
     "expo-asset": "^10.0.9",
     "expo-barcode-scanner": "~13.0.1",
     "expo-constants": "~16.0.2",
+    "expo-device": "~6.0.2",
     "expo-font": "~12.0.7",
     "expo-module-scripts": "^3.5.2",
     "expo-notifications": "~0.28.9",
