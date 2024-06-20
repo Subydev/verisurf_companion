@@ -10,14 +10,26 @@ import MeasureScreen from '../screens/MeasureScreen';
 import AutoScreen from '../screens/AutoScreen';
 import Scanner from '../screens/Scanner';
 import Colors from '../constants/Colors';
-import DetailScreen from '../screens/DetailScreen'; // Import DetailScreen
+import DetailScreen from '../screens/SettingsScreens/DetailScreen'; // Import DetailScreen
+import AppearanceSettingsScreen from '../screens/SettingsScreens/AppearanceSettingsScreen';
+import DeviceSettingsScreen from '../screens/SettingsScreens/DeviceSettingsScreen';
+import MeasureSettingsScreen from '../screens/SettingsScreens/MeasureSettingsScreen';
+import ReportSettingsScreen from '../screens/SettingsScreens/ReportSettingsScreen';
+import AutoInspectSettingsScreen from '../screens/SettingsScreens/AutoInspectSettingsScreen';
+import NotificationSettingsScreen from '../screens/SettingsScreens/NotificationSettingsScreen';
+import ContactusSettingsScreen from '../screens/SettingsScreens/ContactusSettingsScreen';
+import StyleSheet from 'react-native-extended-stylesheet';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator ();
 
 const screenOptions = {
   headerShown: false,
+  // cardStyle: { backgroundColor: '#fff' },
 };
+
+
 
 function BuildStackScreen() {
   console.log('BuildStackScreen: Rendering');
@@ -31,10 +43,31 @@ function BuildStackScreen() {
 function SettingsStackScreen() {
   console.log('SettingsStackScreen: Rendering');
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+
+    <Stack.Navigator
+    screenOptions={{
+      headerShown: false,
+      cardStyle: { backgroundColor: StyleSheet.value("$bgColor")  },
+      cardStyleInterpolator: ({ current: { progress } }) => ({
+        cardStyle: {
+          opacity: progress.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, 1],
+          }),
+        },
+      }),
+    }}
+  >
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Scanner" component={Scanner} />
       <Stack.Screen name="Details" component={DetailScreen} />
+      <Stack.Screen name="AppearanceSettings" component={AppearanceSettingsScreen} />
+      <Stack.Screen name="DeviceSettings" component={DeviceSettingsScreen} />
+      <Stack.Screen name="MeasureSettingsScreen" component={MeasureSettingsScreen} />
+      <Stack.Screen name="AutoInspectSettingsScreen" component={AutoInspectSettingsScreen} />
+      <Stack.Screen name="ReportSettingsScreen" component={ReportSettingsScreen} />
+      <Stack.Screen name="NotificationSettingsScreen" component={NotificationSettingsScreen} />
+      <Stack.Screen name="ContactusSettingsScreen" component={ContactusSettingsScreen} />
     </Stack.Navigator>
   );
 }
@@ -69,6 +102,7 @@ function ReportsStackScreen() {
 export default function MainTabNavigator() {
   console.log('MainTabNavigator: Rendering');
   return (
+    <SafeAreaView style={styles.safeArea}>
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused }) => {
@@ -128,5 +162,13 @@ export default function MainTabNavigator() {
         options={{ tabBarLabel: 'Settings', headerShown: false  }}
       />
     </Tab.Navigator>
+    </SafeAreaView>
+
   );
 }
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: Colors.tabBar,
+  },
+});

@@ -49,28 +49,46 @@ class SignInScreen extends React.Component {
     });
   }
 
-  loginPressed = () => {
-    console.log('SignInScreen: Login button pressed');
-    if (this.state.IPAddress === '') {
-      console.log('SignInScreen: IPAddress is empty');
-      this.props.change_value_only('', 'IPAddress');
-      this.props.change_value_only('red', 'statusColor');
-      this.props.navigation.navigate('App');
-    }
-    this.setState({ loading: true, ip_error: '', port_error: '' });
+  isValidIPAddress = (ipAddress) => {
+    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+    return ipRegex.test(ipAddress);
+  };
 
-    if (this.state.IPAddress.length == 0 || this.state.port.length == 0) {
-      console.log('SignInScreen: Missing IPAddress or port');
-      if (this.state.IPAddress.length == 0) {
-        this.setState({ ip_error: 'Please enter an IP Address.' });
-      }
-      if (this.state.port.length == 0) {
-        this.setState({ port_error: 'Please enter a port number.' });
-      }
+loginPressed = () => {
+  if (this.state.IPAddress === '') {
+    Alert.alert(
+      'IP Address Blank',
+      'You have left the IP Address blank. Would you like to proceed to simulate mode?',
+      [
+        {
+          text: 'No',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes',
+          onPress: () => {
+            this.props.change_value_only('', 'IPAddress');
+            this.props.change_value_only('red', 'statusColor');
+            this.props.navigation.navigate('App');
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+    return;
+  }
 
-      this.setState({ loading: false });
-      return;
-    }
+  if (!this.isValidIPAddress(this.state.IPAddress)) {
+    this.setState({ ip_error: 'Invalid IP address' });
+    return;
+  }
+
+  this.setState({ loading: true, ip_error: '', port_error: '' });
+
+  if (this.state.port.length === 0) {
+    this.setState({ loading: false });
+    return;
+  }
 
     var ws = new WebSocket("ws://" + this.state.IPAddress + ":" + this.state.port);
     ws.onopen = () => {
@@ -87,8 +105,9 @@ class SignInScreen extends React.Component {
   };
 
   useSimulatorPressed = () => {
-    console.log('SignInScreen: Use Simulator button pressed');
-    this.loginPressed();
+    this.props.change_value_only('', 'IPAddress');
+    this.props.change_value_only('red', 'statusColor');
+    this.props.navigation.navigate('App');
   };
 
   static navigationOptions = {

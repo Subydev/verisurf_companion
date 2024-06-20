@@ -21,6 +21,7 @@ class ThemeProvider extends React.Component {
   buildTheme(darkMode) {
     console.log('ThemeProvider: Building theme, darkMode:', darkMode);
     const theme = darkMode ? dark : light;
+    theme.$cardColor = darkMode ? '#333333' : '#F0F0F0'; // Add this line
     EStyleSheet.build(theme);
   }
 

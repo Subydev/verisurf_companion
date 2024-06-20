@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { RFPercentage, RFValue } from "react-native-responsive-fontsize";
 import { useFocusEffect } from "@react-navigation/native";
 import EStyleSheet from "react-native-extended-stylesheet";
@@ -50,6 +50,15 @@ const AutoScreen = (props) => {
       ws.send("<inspect_plan_start id='0' />");
     }
   };
+  useEffect(() => {
+    // Update the state when props.decimal_places changes
+    setState((prevState) => ({
+      ...prevState,
+      objValues: prevState.objValues.map((value) =>
+        parseFloat(value).toFixed(props.decimal_places)
+      ),
+    }));
+  }, [props.decimal_places, props.single_or_average]);
 
   useFocusEffect(
     useCallback(() => {
@@ -198,28 +207,22 @@ const AutoScreen = (props) => {
     return res;
   };
 
-  const namesArr = [];
-  for (let i = 0; i < propsInObj; i++) {
-    namesArr.push(
-      <Text
-        key={i}
-        numberOfLines={1}
-        style={[styles.droText, { fontSize: state.responsiveText }]}
-      >
-      {props.IPAddress === "" ? state.objNames[i] + ":" : objNames[i] + ":"}
-      </Text>
-    );
-  }
+  const namesArr = state.objNames.map((name, i) => (
+    <Text
+      key={i}
+      numberOfLines={1}
+      style={[styles.droText, { fontSize: state.responsiveText }]}
+    >
+      {props.IPAddress === "" ? name + ":" : name + ":"}
+    </Text>
+  ));
 
-  const valuesArr = [];
-  for (let i = 0; i < propsInObj; i++) {
-    valuesArr.push(
-      <Text key={i} style={[styles.droText, { fontSize: state.responsiveText }]}>
-      {props.IPAddress === "" ? state.objValues[i] : objValues[i]}
-      </Text>
-    );
-  }
-
+  const valuesArr = state.objValues.map((value, i) => (
+    <Text key={i} style={[styles.droText, { fontSize: state.responsiveText }]}>
+      {props.IPAddress === "" ? state.objValues[i] : value}
+    </Text>
+  ));
+  
   return (
     
     <TouchableHighlight

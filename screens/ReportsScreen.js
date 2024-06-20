@@ -28,7 +28,6 @@ const windowWidth = Dimensions.get("window").width;
 
 const ReportsScreen = (props) => {
   const [activeSections, setActiveSections] = useState([]);
-  const [decimalPlaces, setDecimalPlaces] = useState(undefined);
   const [headers, setHeaders] = useState([]);
   const [animValue, setAnimValue] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -64,6 +63,13 @@ const ReportsScreen = (props) => {
     }, [props.IPAddress, props.port])
   );
 
+  useEffect(() => {
+    if (props.decimal_places !== undefined) {
+      // Ensure the component re-renders when decimal_places changes
+      setActiveSections([...activeSections]);
+    }
+  }, [props.decimal_places], props.single_or_average, props.device_number);
+
   const CLEAR_DATA = () => {
     did_load = 0;
     SECTIONS = [];
@@ -80,164 +86,152 @@ const ReportsScreen = (props) => {
     (q) => {
       if (props.IPAddress !== '') {
 
-      ws.current.onopen = () => {
-        if (q === undefined) {
-          ws.current.send("<inspect_plan_list />");
-          ws.current.send("<inspect_plan_info id='0' />");
-        } else {
-          ws.current.send(`<inspect_plan_list />`);
-          ws.current.send(`<inspect_plan_info id='${q}' />`);
-        }
-      };
+        ws.current.onopen = () => {
+          if (q === undefined) {
+            ws.current.send("<inspect_plan_list />");
+            ws.current.send("<inspect_plan_info id='0' />");
+          } else {
+            ws.current.send(`<inspect_plan_list />`);
+            ws.current.send(`<inspect_plan_info id='${q}' />`);
+          }
+        };
 
-      ws.current.onmessage = ({ data }) => {
-        if (data.includes("acknowledgement")) {
-          return;
-        }
-
-        if (data.includes("inspect_plan_info")) {
-          var xmlResult = _xmlParse(data);
-
-          if (
-            xmlResult["response"]["success"]["data"]["inspect_plan_info"] === ""
-          ) {
+        ws.current.onmessage = ({ data }) => {
+          if (data.includes("acknowledgement")) {
             return;
           }
 
-          var currentPlanName =
-            xmlResult["response"]["success"]["data"]["inspect_plan_info"][
-              "plan"
-            ]["Object Name:"];
+          if (data.includes("inspect_plan_info")) {
+            var xmlResult = _xmlParse(data);
 
-          if (planNumber === undefined) {
-            currentPlan.current =
+            if (
+              xmlResult["response"]["success"]["data"]["inspect_plan_info"] === ""
+            ) {
+              return;
+            }
+
+            var currentPlanName =
               xmlResult["response"]["success"]["data"]["inspect_plan_info"][
                 "plan"
-              ]["attr"]["id"];
-            setPlanNumber(currentPlan.current);
-            setPlanName(currentPlanName);
-          } else {
-            setPlanName(currentPlanName);
-          }
+              ]["Object Name:"];
 
-          var objsInPlan =
-            xmlResult["response"]["success"]["data"]["inspect_plan_info"][
-              "plan"
-            ]["plan_object"];
-          var num_of_objects = 0;
+            if (planNumber === undefined) {
+              currentPlan.current =
+                xmlResult["response"]["success"]["data"]["inspect_plan_info"][
+                  "plan"
+                ]["attr"]["id"];
+              setPlanNumber(currentPlan.current);
+              setPlanName(currentPlanName);
+            } else {
+              setPlanName(currentPlanName);
+            }
 
-          if (objsInPlan === undefined) {
-            setRefreshing(false);
-            return;
-          } else if (Array.isArray(objsInPlan)) {
-            for (var key in objsInPlan) {
-              num_of_objects += 1;
-              let planName = objsInPlan[key]["Object Name:"];
+            var objsInPlan =
+              xmlResult["response"]["success"]["data"]["inspect_plan_info"][
+                "plan"
+              ]["plan_object"];
+            var num_of_objects = 0;
+
+            if (objsInPlan === undefined) {
+              setRefreshing(false);
+              return;
+            } else if (Array.isArray(objsInPlan)) {
+              for (var key in objsInPlan) {
+                num_of_objects += 1;
+                let planName = objsInPlan[key]["Object Name:"];
+                SECTIONS.push({
+                  title: planName,
+                  content: {},
+                });
+                var joined = animValue.concat(new Animated.Value(250));
+                setAnimValue(joined);
+                setRefreshing(false);
+              }
+            } else {
+              num_of_objects = 1;
               SECTIONS.push({
-                title: planName,
+                title: objsInPlan["Object Name:"],
                 content: {},
               });
               var joined = animValue.concat(new Animated.Value(250));
               setAnimValue(joined);
               setRefreshing(false);
             }
-          } else {
-            num_of_objects = 1;
-            SECTIONS.push({
-              title: objsInPlan["Object Name:"],
-              content: {},
-            });
-            var joined = animValue.concat(new Animated.Value(250));
-            setAnimValue(joined);
-            setRefreshing(false);
+            setNumOfObjects(num_of_objects);
           }
-          setNumOfObjects(num_of_objects);
-        }
 
-        if (data.includes("inspect_plan_list")) {
-          var xmlResult = _xmlParse(data);
-          var plans = xmlResult["response"]["success"]["data"]["plans"]["plan"];
+          if (data.includes("inspect_plan_list")) {
+            var xmlResult = _xmlParse(data);
+            var plans = xmlResult["response"]["success"]["data"]["plans"]["plan"];
 
-          if (plans === undefined) {
-            setRefreshing(false);
-            return;
-          } else if (Array.isArray(plans)) {
-            setTotalPlans(plans.length);
-            for (var key in plans) {
+            if (plans === undefined) {
+              setRefreshing(false);
+              return;
+            } else if (Array.isArray(plans)) {
+              setTotalPlans(plans.length);
+              for (var key in plans) {
+                setAllPlans((prevPlans) => [
+                  ...prevPlans,
+                  <Picker.Item
+                    label={plans[key]["Object Name:"]}
+                    value={plans[key]["attr"]["id"]}
+                    key={plans[key]["attr"]["id"]}
+                  />,
+                ]);
+              }
+            } else {
+              setTotalPlans(1);
               setAllPlans((prevPlans) => [
                 ...prevPlans,
                 <Picker.Item
-                  label={plans[key]["Object Name:"]}
-                  value={plans[key]["attr"]["id"]}
-                  key={plans[key]["attr"]["id"]}
+                  label={plans["Object Name:"]}
+                  value={plans["attr"]["id"]}
+                  key={plans["attr"]["id"]}
                 />,
               ]);
             }
-          } else {
-            setTotalPlans(1);
-            setAllPlans((prevPlans) => [
-              ...prevPlans,
-              <Picker.Item
-                label={plans["Object Name:"]}
-                value={plans["attr"]["id"]}
-                key={plans["attr"]["id"]}
-              />,
-            ]);
           }
-        }
-      };
-    } else {
-      console.log('No IP Address')
-      // No WebSocket connection, use simulator data
-      const simulatorData = reportData.inspect_plan_info.plan.plan_objects;
-      setAllPlans((prevPlans) => [
-        ...prevPlans,
-        <Picker.Item
-          label="Inspection Report"
-          value="id"
-          key="attr"
-        />,
-      ]);
-      // Clear the existing sections
-      SECTIONS = [];
+        };
+      } else {
+        console.log('No IP Address')
+        // No WebSocket connection, use simulator data
+        const simulatorData = reportData.inspect_plan_info.plan.plan_objects;
+        setAllPlans((prevPlans) => [
+          ...prevPlans,
+          <Picker.Item
+            label="Inspection Report"
+            value="id"
+            key="attr"
+          />,
+        ]);
+        // Clear the existing sections
+        SECTIONS = [];
 
-      // Populate the sections array with simulator data
-      setPlanNumber(0);
-      setPlanName("Inspection Report");
-      console.log(planName)
-      console.log(simulatorData)
-      simulatorData.forEach((object) => {
-        SECTIONS.push({
-          title: object.name,
-          content: {
-            
-            // Add any additional properties you want to display
-          },
+        // Populate the sections array with simulator data
+        setPlanNumber(0);
+        setPlanName("Inspection Report");
+        console.log(planName)
+        console.log(simulatorData)
+        simulatorData.forEach((object) => {
+          SECTIONS.push({
+            title: object.name,
+            content: {
+              
+              // Add any additional properties you want to display
+            },
+          });
         });
-      });
-      
+        
 
-      // Update the state with the new sections
-      setActiveSections([]);
-      setAnimValue(SECTIONS.map(() => new Animated.Value(0)));
-      setRefreshing(false);
-    }
-  },
-  [props.IPAddress, props.port]
-);
+        // Update the state with the new sections
+        setActiveSections([]);
+        setAnimValue(SECTIONS.map(() => new Animated.Value(0)));
+        setRefreshing(false);
+      }
+    },
+    [props.IPAddress, props.port]
+  );
 
-  const _getSimulatorData = (type) => {
-    switch (type) {
-      case 'inspect_object_info':
-        return sampleData.inspect_object_info;
-      case 'inspect_plan_info':
-        return sampleData.inspect_plan_info;
-      case 'inspect_plan_list':
-        return sampleData.inspect_plan_list;
-      default:
-        return null;
-    }
-  };
   const _xmlParse = (data) => {
     var options = {
       attributeNamePrefix: "",

@@ -1,23 +1,15 @@
-import * as React from "react";
+import React, { useState, useRef } from "react";
 import {
   Image,
   Text,
   View,
   ScrollView,
-  Switch,
   TouchableOpacity,
   Linking,
-  Button,
-  Modal,
-  TouchableHighlight,
-  Platform,
+
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import {
-  Slider,
-  Input,
   SocialIcon,
-  Tooltip,
   ListItem,
   Icon,
 } from "react-native-elements";
@@ -25,954 +17,296 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { connect } from "react-redux";
 import EStyleSheet from "react-native-extended-stylesheet";
 import { RFPercentage, RFValue } from "react-native-responsive-fontsize";
-import { Ionicons } from "@expo/vector-icons";
 import { Dimensions } from "react-native";
 import AppData from "../app.json";
+import { Ionicons } from "@expo/vector-icons";
+
 
 const AppearanceList = [
-  { title: 'Appearance Options', icon: 'av-timer' },
-];
+    { title: "Appearance Options", icon: "color-palette" },
+    { title: "Notifications ", icon: "notifications-outline" },
+  ];
+  const MeasureSettingsList = [
+    { title: "Measure Settings", icon: "resize-outline" },
+  ];
+  
+  const ReportSettingsList = [
+    { title: "Report Settings", icon: "document-text-outline" },
+    { title: "Auto-Inspect Settings", icon: "play-outline" },
+  ];
+  
+  const DeviceSettingsList = [
+    { title: "Device Settings", icon: "hardware-chip-outline" },
+  ];
 
-const MeasureSettingsList = [
-  { title: 'Measure Settings', icon: 'flight-takeoff' },
-  { title: 'Build Settings', icon: 'flight-takeoff' },
-];
+  const ContactUsSettingsList = [
+    { title: "Contact Us", icon: "call-outline" },
+  ];
 
-const ReportSettingsList = [
-  { title: 'Report Settings', icon: 'flight-takeoff' },
-  { title: 'Auto-Inspect Settings', icon: 'flight-takeoff' },
-];
+  const NotificationSettingsList = [
+    { title: "Notifications", icon: "notifications-outline" },
 
-const DeviceSettingsList = [
-  { title: 'Device Settings', icon: 'flight-takeoff' },
-];
+  ];
+  
+  
+const SettingsScreen = (props) => {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [inTolCol, setInTolCol] = useState("");
+  const [ootPosCol, setOotPosCol] = useState("");
+  const [ootNegCol, setOotNegCol] = useState("");
+  const [opacityLevel, setOpacityLevel] = useState(1);
 
-const ContactList = [
-  { title: 'Contact Us', icon: 'flight-takeoff' },
-];
+  const myRef = useRef(null);
+  const inputter = useRef(null);
+  const inTolText = useRef(null);
+  const ootPosText = useRef(null);
+  const ootNegText = useRef(null);
+  const screenHeight = Math.round(Dimensions.get("window").height);
+  const heightHelper = 150;
 
-class SettingsScreen extends React.Component {
-  constructor() {
-    super();
-    this.myRef = React.createRef();
-    this.inputter = React.createRef();
-    this.inTolText = React.createRef();
-    this.ootPosText = React.createRef();
-    this.ootNegText = React.createRef();
-    this.screenHeight = Math.round(Dimensions.get("window").height);
-    this.heightHelper = 150;
-
-    this.state = {
-      modalVisible: false,
-      inTolCol: "",
-      ootPosCol: "",
-      ootNegCol: "",
-      opacitylevel: 1,
-    };
-  }
-
-  componentWillUnmount() {
-    this.setState({ modalVisible: false });
-  }
-
-  _signOutAsync = async () => {
+  const _signOutAsync = async () => {
     await AsyncStorage.removeItem("userToken");
-    this.props.navigation.navigate("Auth");
+    props.navigation.navigate("Auth");
   };
 
-  submitColor = (reduxval, hexValue) => {
-    var matcher = /#[0-9a-f]{6}|#[0-9a-f]{3}/gi;
-    var x = matcher.exec(hexValue);
+  const submitColor = (reduxVal, hexValue) => {
+    const matcher = /#[0-9a-f]{6}|#[0-9a-f]{3}/gi;
+    const x = matcher.exec(hexValue);
     if (x == null || x == undefined) {
-      if (this.inTolText.current.isFocused() == true) {
-        this.inTolText.current.shake();
-        this.inTolText.current.clear();
-      } else if (this.ootPosText.current.isFocused() == true) {
-        this.ootPosText.current.shake();
-        this.ootPosText.current.clear();
+      if (inTolText.current.isFocused()) {
+        inTolText.current.shake();
+        inTolText.current.clear();
+      } else if (ootPosText.current.isFocused()) {
+        ootPosText.current.shake();
+        ootPosText.current.clear();
       } else {
-        this.ootNegText.current.shake();
-        this.ootNegText.current.clear();
+        ootNegText.current.shake();
+        ootNegText.current.clear();
       }
     } else {
-      this.props.change_value_only(x[0], reduxval);
+      props.change_value_only(x[0], reduxVal);
     }
   };
 
-  textFocused = () => {
-    this.myRef.scrollTo({
-      y: this.heightHelper + this.screenHeight / 5,
-      animated: true,
-    });
+  const textFocused = () => {
+    if (myRef.current) {
+      myRef.current.scrollTo({
+        y: heightHelper + screenHeight / 5,
+        animated: true,
+      });
+    }
   };
 
-  renderList = (list) => {
+  const renderList = (list) => {
     return list.map((item, i) => (
       <ListItem
         key={i}
         containerStyle={[
           styles.listItemContainer,
           i === 0 ? { borderTopLeftRadius: 10, borderTopRightRadius: 10 } : {},
-          i === list.length - 1 ? { borderBottomLeftRadius: 10, borderBottomRightRadius: 10 } : {},
+          i === list.length - 1
+            ? { borderBottomLeftRadius: 10, borderBottomRightRadius: 10 }
+            : {},
         ]}
-        // bottomDivider={i !== list.length - 1}
-        // onPress={() => this.handlePress(item.title)}
         onPress={() => {
-          const { navigate } = this.props.navigation;
+          const { navigate } = props.navigation;
           const title = item.title;
-          navigate('Details', { title });
+          switch (title) {
+            case "Appearance Options":
+              navigate("AppearanceSettings");
+              break;
+            case "Notifications":
+              navigate("NotificationSettingsScreen");
+              break;
+            case "Report Settings":
+              navigate("ReportSettingsScreen");
+              break;
+            case "Device Settings":
+              navigate("DeviceSettings");
+              break;
+            case "Auto-Inspect Settings":
+              navigate("AutoInspectSettingsScreen");
+              break;
+            case "Contact us":
+              navigate("ContactusSettingsScreen");
+              break;
+            case "Measure Settings":
+              navigate("MeasureSettingsScreen");
+              break;
+            default:
+              break;
+          }
         }}
         underlayColor="#444"
       >
-        <Icon name={item.icon} color="white" />
+    <Ionicons name={item.icon} size={24} color="white" />
         <ListItem.Content>
-          <ListItem.Title style={{ color: 'white' }}>{item.title}</ListItem.Title>
+          <ListItem.Title style={{ color: "white" }}>
+            {item.title}
+          </ListItem.Title>
         </ListItem.Content>
         <ListItem.Chevron />
       </ListItem>
     ));
   };
 
-  render() {
-    const { dark_mode, themeswitch } = this.props;
-
-    return (
-      //SETUP FOR CONTENT -----------------------------------
-      <View style={{ flex: 1, backgroundColor: EStyleSheet.value("$bgColor") }}>
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={this.state.modalVisible}
-        >
-          <View
-            style={{
-              margin: RFPercentage(5),
-              height: RFPercentage(90),
-              marginBottom: RFPercentage(0),
-            }}
-          >
-            <View
-              style={{
-                paddingTop: RFValue(10),
-                flexWrap: "wrap",
-                backgroundColor: EStyleSheet.value("$cardColor"),
-                flex: 2,
-                flexDirection: "row",
-                justifyContent: "space-around",
-                borderWidth: 1,
-                borderRadius: 10,
+  return (
+    <View style={{ flex: 1, backgroundColor: "#000" }}>
+      <ScrollView
+        style={[styles.scrollContainer, { opacity: opacityLevel }]}
+        ref={myRef}
+      >
+        <View style={styles.content}>
+          <View style={styles.Headercontainer}>
+            <TouchableOpacity
+              style={styles.imagebox}
+              onPress={() => {
+                const { navigate } = props.navigation;
+                navigate("Scanner");
               }}
             >
-              <TouchableHighlight
-                style={[
-                  styles.colorCircle,
-                  {
-                    borderColor: this.props.in_tolerance_color,
-                    marginTop: RFPercentage(5),
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.innerCircle,
-                    {
-                      backgroundColor: this.props.in_tolerance_color,
-                      borderColor: this.props.in_tolerance_color,
-                    },
-                  ]}
-                ></View>
-              </TouchableHighlight>
-
-              <Input
-                label={"In Tolerance"}
-                labelStyle={{ color: EStyleSheet.value("$textColor") }}
-                ref={this.inTolText}
-                inputContainerStyle={{
-                  alignSelf: "center",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  borderBottomWidth: 1,
-                  borderColor: EStyleSheet.value("$textColor"),
-                }}
-                containerStyle={{
-                  width: 150,
-                  height: 50,
-                  alignSelf: "center",
-                  marginTop: RFPercentage(5),
-                }}
-                inputStyle={{ color: EStyleSheet.value("$textColor") }}
-                placeholderTextColor={EStyleSheet.value("$textColor")}
-                placeholder={this.props.in_tolerance_color}
-                onChangeText={(text) => {
-                  this.setState({ inTolCol: text });
-                }}
-                onSubmitEditing={() =>
-                  this.submitColor("in_tolerance_color", this.state.inTolCol)
-                }
-              />
-
-              <TouchableHighlight
-                style={[
-                  styles.colorCircle,
-                  {
-                    borderColor: this.props.oot_pos_color,
-                    marginTop: RFPercentage(5),
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.innerCircle,
-                    {
-                      backgroundColor: this.props.oot_pos_color,
-                      borderColor: this.props.oot_pos_color,
-                    },
-                  ]}
-                ></View>
-              </TouchableHighlight>
-
-              <Input
-                label={"Heavy OOT"}
-                labelStyle={{ color: EStyleSheet.value("$textColor") }}
-                ref={this.ootPosText}
-                inputContainerStyle={{
-                  alignSelf: "center",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  borderBottomWidth: 1,
-                  borderColor: EStyleSheet.value("$textColor"),
-                }}
-                containerStyle={{
-                  width: 150,
-                  height: 50,
-                  alignSelf: "center",
-                  marginTop: RFPercentage(5),
-                }}
-                inputStyle={{ color: EStyleSheet.value("$textColor") }}
-                placeholder={this.props.oot_pos_color}
-                placeholderTextColor={EStyleSheet.value("$textColor")}
-                onChangeText={(text) => {
-                  this.setState({ ootPosCol: text });
-                }}
-                onSubmitEditing={() =>
-                  this.submitColor("oot_pos_color", this.state.ootPosCol)
-                }
-              />
-
-              <TouchableHighlight
-                style={[
-                  styles.colorCircle,
-                  {
-                    borderColor: this.props.oot_neg_color,
-                    marginTop: RFPercentage(5),
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.innerCircle,
-                    {
-                      backgroundColor: this.props.oot_neg_color,
-                      borderColor: this.props.oot_neg_color,
-                    },
-                  ]}
-                ></View>
-              </TouchableHighlight>
-
-              <Input
-                label={"Negative OOT"}
-                labelStyle={{ color: EStyleSheet.value("$textColor") }}
-                ref={this.ootNegText}
-                inputContainerStyle={{
-                  alignSelf: "center",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  borderBottomWidth: 1,
-                  borderColor: EStyleSheet.value("$textColor"),
-                }}
-                containerStyle={{
-                  width: 150,
-                  height: 50,
-                  alignSelf: "center",
-                  marginTop: RFPercentage(5),
-                }}
-                inputStyle={{ color: EStyleSheet.value("$textColor") }}
-                placeholder={this.props.oot_neg_color}
-                placeholderTextColor={EStyleSheet.value("$textColor")}
-                onChangeText={(text) => {
-                  this.setState({ ootNegCol: text });
-                }}
-                onSubmitEditing={() =>
-                  this.submitColor("oot_neg_color", this.state.ootNegCol)
-                }
-              />
-
-              <View style={{ marginTop: RFPercentage(10) }}>
-                <Button
-                  title="Close Window"
-                  onPress={() =>
-                    this.setState({ modalVisible: false, opacitylevel: 1 })
-                  }
-                  color="#B13034"
-                />
-              </View>
-            </View>
-          </View>
-        </Modal>
-
-        <ScrollView
-          style={[styles.scrollContainer, { opacity: this.state.opacitylevel }]}
-          ref={(c) => (this.myRef = c)}
-        >
-          <View style={styles.content}>
-            {/* END SETUP -------------------------------------------*/}
-
-            {/* Header + Image */}
-            <View style={styles.Headercontainer}>
-              <TouchableOpacity
+              <Image
+                source={require("../assets/images/verisurfround.png")}
                 style={styles.imagebox}
-                onPress={() => {
-                  const { navigate } = this.props.navigation;
-                  navigate("Scanner");
-                }}
-              >
-                <Image
-                  source={require("../assets/images/verisurfround.png")}
-                  style={styles.imagebox}
-                />
-                {/* <Text style={styles.imageText}>
-            Settings
-          </Text> */}
-              </TouchableOpacity>
-            </View>
-</View>
-            <View style={styles.containerList}>
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={styles.containerList}>
+
         <View style={styles.sectionList}>
-          <Text style={styles.sectionTitleList}>Application</Text>
-          {this.renderList(AppearanceList)}
+            <Text style={styles.sectionTitleList}>Apps</Text>
+            {renderList(NotificationSettingsList)}
+          </View>
+
+          <View style={styles.sectionList}>
+            <Text style={styles.sectionTitleList}>Devices</Text>
+            {renderList(DeviceSettingsList)}
+            {renderList(MeasureSettingsList)}
+            
+          </View>
+          <View style={styles.sectionList}>
+            <Text style={styles.sectionTitleList}>Reports</Text>
+            {renderList(ReportSettingsList)}
+          </View>
+     
+          <View style={styles.sectionList}>
+            <Text style={styles.sectionTitleList}>Resources</Text>
+            {renderList(ContactUsSettingsList)}
+          </View>
+     
         </View>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitleList}>Measurements</Text>
-          {this.renderList(MeasureSettingsList)}
-        </View>
-        <View style={styles.sectionList}>
-          <Text style={styles.sectionTitleList}>Reports</Text>
-          {this.renderList(ReportSettingsList)}
-        </View>
-        <View style={styles.sectionList}>
-          <Text style={styles.sectionTitleList}>Devices</Text>
-          {this.renderList(DeviceSettingsList)}
-        </View>
-        <View style={styles.sectionList}>
-          <Text style={styles.sectionTitleList}>Resources</Text>
-          {this.renderList(ContactList)}
-        </View>
-      </View>
 
-            {/* SECTION Appearance */}
-            <View style={styles.container2}>
-              <View style={styles.containerSection}>
-                <Text
-                  style={styles.textSection}
-                  numberOfLines={1}
-                  ellipsizeMode={"tail"}
-                >
-                  Appearance
-                </Text>
-                {/* <Tooltip
-                  height={RFValue(155)}
-                  width={RFValue(310)}
-                  popover={
-                    <Text style={{ fontSize: RFValue(15) }}>
-                      <Text
-                        style={{ fontWeight: "bold", fontSize: RFValue(15) }}
-                      >
-                        Dark Mode
-                      </Text>
-                      : Toggle between a dark and light theme.{"\n"}
-                      {"\n"}
-                      <Text
-                        style={{ fontWeight: "bold", fontSize: RFValue(15) }}
-                      >
-                        Tolerance Colors
-                      </Text>
-                      : Set the colors used for indicating tolerance levels in
-                      the build screen. Requires a hex value input.
-                    </Text>
-                  }
-                >
-                  <Icon
-                    iconStyle={{ paddingRight: 15 }}
-                    name="help-outline"
-                    color={EStyleSheet.value("$textColor")}
-                  />
-                </Tooltip> */}
-              </View>
-
-              {/* COMPONENTS */}
-              <View style={{marginTop:RFPercentage(-10)}}>
-                {/* Theme Swithcer */}
-                <View style={(styles.containerInSection, { height: 150 })}>
-                  <View style={styles.containerInnerSection}>
-                    {/* <Text
-                      style={styles.text}
-                      numberOfLines={1}
-                      ellipsizeMode={"tail"}
-                    >
-                      Dark Mode
-                    </Text> */}
-                    {/* <View style={styles.container}>
-                      <Switch
-                        style={styles.switchSt}
-                        value={dark_mode}
-                        onValueChange={() =>
-                          themeswitch(!dark_mode, "dark_mode")
-                        }
-                      />
-                    </View> */}
-                  </View>
-                  <View>
-                    <Text></Text>
-                  </View>
-                  <View style={styles.containerInSection}>
-                    <TouchableOpacity
-                      style={styles.containerInnerSection}
-                      onPress={() =>
-                        this.setState({ modalVisible: true, opacitylevel: 0.5 })
-                      }
-                    >
-                      <Text
-                        style={styles.text}
-                        numberOfLines={1}
-                        ellipsizeMode={"tail"}
-                      >
-                        Tolerance Colors
-                      </Text>
-                      <View style={{ flex: 1, marginRight: RFPercentage(1.7) }}>
-                        <Ionicons
-                          name="brush-outline"
-                          size={RFPercentage(3.8)}
-                          color={EStyleSheet.value("$textColor")}
-                        />
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            </View>
-            {/* End Appearance Section*/}
-
-            {/* Section Measure */}
-            <View style={styles.container}>
-              <View style={styles.containerSection}>
-                <Text
-                  style={styles.textSection}
-                  numberOfLines={1}
-                  ellipsizeMode={"tail"}
-                >
-                  Measure
-                </Text>
-                <Tooltip
-                  height={RFValue(155)}
-                  width={RFValue(310)}
-                  popover={
-                    <Text style={{ fontSize: RFValue(15) }}>
-                      <Text
-                        style={{ fontWeight: "bold", fontSize: RFValue(15) }}
-                      >
-                        Decimal Place
-                      </Text>
-                      : Change how many decimals are displayed in all VS
-                      Companion screens.{"\n"}
-                      {"\n"}
-                      <Text
-                        style={{ fontWeight: "bold", fontSize: RFValue(15) }}
-                      >
-                        Build Tolerance
-                      </Text>
-                      : Change the Build Tolerance used in the Build Screen.
-                    </Text>
-                  }
-                >
-                  <Icon
-                    iconStyle={{ paddingRight: 15 }}
-                    name="help-outline"
-                    color={EStyleSheet.value("$textColor")}
-                  />
-                </Tooltip>
-              </View>
-
-              {/*Components*/}
-              <View>
-                {/* Decimal Picker */}
-                <View style={styles.containerInSection}>
-                  <View
-                    key={this.props.dark_mode}
-                    style={styles.containerInnerSection}
-                  >
-                    <Text
-                      style={styles.text}
-                      numberOfLines={1}
-                      ellipsizeMode={"tail"}
-                    >
-                      Decimal Places
-                    </Text>
-                    <View style={styles.pickerContainer}>
-    <Picker
-      selectedValue={this.props.decimal_places.toString()}
-      style={styles.picker}
-      itemStyle={styles.pickerItem}
-      onValueChange={(itemValue, itemIndex) => {
-        this.props.change_value_only(itemValue, "decimal_places");
-      }}
-    >
-      <Picker.Item label="1" value="1" />
-      <Picker.Item label="2" value="2" />
-      <Picker.Item label="3" value="3" />
-      <Picker.Item label="4" value="4" />
-    </Picker>
-                  </View>
-                </View>
-
-                {/* Build Tolerance */}
-                <View style={styles.containerEndSection}>
-                  <View style={styles.containerInnerSection}>
-                    <Text
-                      style={styles.text2}
-                      numberOfLines={1}
-                      ellipsizeMode={"tail"}
-                    >
-                      Build Tolerance
-                    </Text>
-                    <Input
-                      onLayout={(event) => {
-                        const layout = event.nativeEvent.layout;
-                        this.heightHelper = layout.height;
-                      }}
-                      ref={this.inputter}
-                      clearButtonMode={"while-editing"}
-                      textAlign={"center"}
-                      inputContainerStyle={styles.inputContainer}
-                      inputStyle={styles.inputText}
-                      labelStyle={styles.text}
-                      containerStyle={styles.inputInnerContainer} // Merged containerStyle here
-                      Label={"Build Tolerance"}
-                      disabled={false}
-                      keyboardType="numeric"
-                      defaultValue={this.props.build_tol.toString()}
-                      onFocus={this.textFocused}
-                      onChangeText={(text) =>
-                        this.props.updating_value(text, "build_tol")
-                      }
-                      onEndEditing={() =>
-                        this.props.finalizetol(this.props.build_tol.toString())
-                      }
-                    />
-                  </View>
-                </View>
-              </View>
-              {/* End Components */}
-            </View>
-            {/* End Section Measure */}
-
-            {/* Section Auto Inspect */}
-            <View style={styles.container}>
-              <View style={styles.containerSection}>
-                <Text
-                  style={styles.textSection}
-                  numberOfLines={1}
-                  ellipsizeMode={"tail"}
-                >
-                  Auto Inspect
-                </Text>
-                <Tooltip
-                  height={RFValue(70)}
-                  width={RFValue(310)}
-                  popover={
-                    <Text style={{ fontSize: RFValue(15) }}>
-                      <Text
-                        style={{ fontWeight: "bold", fontSize: RFValue(15) }}
-                      >
-                        Response Time
-                      </Text>
-                      : How fast data is transmitted from Verisurf.{"\n"}
-                      {"\n"}
-                    </Text>
-                  }
-                >
-                  <Icon
-                    iconStyle={{ paddingRight: 15 }}
-                    name="help-outline"
-                    color={EStyleSheet.value("$textColor")}
-                  />
-                </Tooltip>
-              </View>
-
-              {/*Components*/}
-              <View>
-                {/* Response Time Slider */}
-                <View style={[styles.containerInSection, { marginBottom: 10 }]}>
-                  <View stlye={styles.containerInnerSection}></View>
-                  <Text
-                    style={styles.text}
-                    numberOfLines={1}
-                    ellipsizeMode={"tail"}
-                  >
-                    Response Time (ms): {this.props.auto_response_time}
-                  </Text>
-                  <Slider
-                    step={50}
-                    disabled={false}
-                    style={styles.sliderSt}
-                    thumbTintColor={this.props.dark_mode ? "white" : "#000"}
-                    maximumValue={1000}
-                    minimumTrackTintColor={
-                      this.props.dark_mode ? "#B13034" : "black"
-                    }
-                    thumbStyle={{ height: 20, width: 20 }}
-                    minimumValue={300}
-                    value={this.props.auto_response_time}
-                    onValueChange={(value) =>
-                      this.props.updating_value(value, "auto_response_time")
-                    }
-                  />
-                </View>
-              </View>
-            </View>
-            {/* End Section Auto Inspect */}
-
-            {/* Section Device */}
-            <View style={styles.container}>
-              <View style={styles.containerSection}>
-                <Text
-                  style={styles.textSection}
-                  numberOfLines={1}
-                  ellipsizeMode={"tail"}
-                >
-                  Device
-                </Text>
-                <Tooltip
-                  height={RFValue(200)}
-                  width={RFValue(310)}
-                  popover={
-                    <Text style={{ fontSize: RFValue(15) }}>
-                      <Text
-                        style={{ fontWeight: "bold", fontSize: RFValue(15) }}
-                      >
-                        Response Time
-                      </Text>
-                      : How fast data is transmitted from Verisurf.{"\n"}
-                      {"\n"}
-                      <Text
-                        style={{ fontWeight: "bold", fontSize: RFValue(15) }}
-                      >
-                        Device Number
-                      </Text>
-                      : Which device is used to retreive data. Defaults to the
-                      first device.{"\n"}
-                      {"\n"}
-                      <Text
-                        style={{ fontWeight: "bold", fontSize: RFValue(15) }}
-                      >
-                        Single Point Method
-                      </Text>
-                      : Toggle Average or Single Point when tapping to measure.
-                    </Text>
-                  }
-                >
-                  <Icon
-                    iconStyle={{ paddingRight: 15 }}
-                    name="help-outline"
-                    color={EStyleSheet.value("$textColor")}
-                  />
-                </Tooltip>
-              </View>
-
-              {/*Components*/}
-              <View>
-                {/* Response Time Slider */}
-                <View style={styles.containerInSection}>
-                  <View stlye={styles.containerInnerSection}></View>
-                  <Text
-                    style={styles.text}
-                    numberOfLines={1}
-                    ellipsizeMode={"tail"}
-                  >
-                    Response Time (ms): {this.props.response_time}
-                  </Text>
-                  <Slider
-                    step={10}
-                    thumbStyle={{ height: 20, width: 20 }}
-                    disabled={false}
-                    style={styles.sliderSt}
-                    thumbTintColor={this.props.dark_mode ? "white" : "#000"}
-                    maximumValue={1000}
-                    minimumTrackTintColor={
-                      this.props.dark_mode ? "#B13034" : "black"
-                    }
-                    minimumValue={10}
-                    value={this.props.response_time}
-                    onValueChange={(value) =>
-                      this.props.updating_value(value, "response_time")
-                    }
-                  />
-                </View>
-                {/* Device Number Slider */}
-                <View style={styles.containerInSection}>
-                  <View stlye={styles.containerInnerSection}></View>
-                  <Text
-                    style={styles.text}
-                    numberOfLines={1}
-                    ellipsizeMode={"tail"}
-                  >
-                    Device Number: {this.props.device_number}
-                  </Text>
-                  <Slider
-                    disabled={false}
-                    thumbStyle={{ height: 20, width: 20 }}
-                    style={styles.sliderSt}
-                    thumbTintColor={this.props.dark_mode ? "white" : "#000"}
-                    maximumValue={8}
-                    minimumTrackTintColor={
-                      this.props.dark_mode ? "#B13034" : "black"
-                    }
-                    minimumValue={1}
-                    value={this.props.device_number}
-                    step={1}
-                    onValueChange={(value) =>
-                      this.props.updating_value(value, "device_number")
-                    }
-                  />
-                </View>
-                {/* Single || Continous Component*/}
-                <View style={styles.containerEndSection}>
-                  <View style={styles.containerInnerSection}>
-                    <Text
-                      style={styles.text2}
-                      numberOfLines={1}
-                      ellipsizeMode={"tail"}
-                    >
-                      Single Point Method
-                    </Text>
-                    <View style={{ flex: 2, marignRight: 25, padding: 0 }}>
-                      <Button
-                        style={{ marginLeft: 20, padding: 0 }}
-                        title={this.props.single_or_average}
-                        onPress={() => {
-                          {
-                            var changeValue =
-                              this.props.single_or_average == "single"
-                                ? "average"
-                                : "single";
-                            this.props.change_value_only(
-                              changeValue,
-                              "single_or_average"
-                            );
-                          }
-                        }}
-                        color={"#C12030"}
-                      />
-                    </View>
-                  </View>
-                </View>
-                {/*End Single Component */}
-              </View>
-              {/* End Components */}
-            </View>
-            {/* End Section Device */}
-
-            {/* SUPPORT SECTION */}
-            <View style={styles.container}>
-              <View style={styles.containerSection}>
-                <Text
-                  style={styles.textSection}
-                  numberOfLines={1}
-                  ellipsizeMode={"tail"}
-                >
-                  Support
-                </Text>
-              </View>
-              <View>
-                <View style={styles.containerInSection}>
-                  <TouchableOpacity
-                    style={[
-                      styles.containerInnerSection,
-                      { paddingLeft: RFPercentage(2) },
-                    ]}
-                    onPress={() => Linking.openURL("mailto:codes@verisurf.com")}
-                  >
-                    <Ionicons
-                      name="mail"
-                      color={EStyleSheet.value("$textColor")}
-                      size={RFPercentage(3)}
-                    />
-                    <Text style={styles.text}>codes@verisurf.com</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.containerEndSection}>
-                  <TouchableOpacity
-                    style={[
-                      styles.containerInnerSection,
-                      { paddingLeft: RFPercentage(2) },
-                    ]}
-                    onPress={() =>
-                      Linking.openURL("mailto:support@verisurf.com")
-                    }
-                  >
-                    <Ionicons
-                      name="mail"
-                      color={EStyleSheet.value("$textColor")}
-                      size={RFPercentage(3)}
-                    />
-                    <Text style={styles.text}>support@verisurf.com</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-            {/* End Support Sction*/}
-
-            {/* Sign Out Section */}
-            <View style={styles.container}>
-              <TouchableOpacity onPress={this._signOutAsync}>
-                <View style={styles.containerSection}>
-                  <Text style={{ fontSize: RFValue(15), color: "red" }}>
-                    Sign Out
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-            {/* End Sign Out Section */}
-
-            {/* End Section Seperator & Social Media Icons */}
-            <View style={styles.endSeperator}>
-              <SocialIcon
-                type="twitter"
-                raised
-                light={this.props.dark_mode ? false : true}
-                onPress={() => Linking.openURL("https://twitter.com/verisurf")}
-              />
-              <SocialIcon
-                type="linkedin"
-                raised
-                light={this.props.dark_mode ? false : true}
-                onPress={() =>
-                  Linking.openURL("https://www.linkedin.com/company/verisurf/")
-                }
-              />
-              <SocialIcon
-                type="facebook"
-                raised
-                light={this.props.dark_mode ? false : true}
-                onPress={() =>
-                  Linking.openURL("https://www.facebook.com/verisurf/")
-                }
-              />
-              <SocialIcon
-                type="instagram"
-                raised
-                light={this.props.dark_mode ? false : true}
-                onPress={() =>
-                  Linking.openURL("https://www.instagram.com/verisurf/")
-                }
-              />
-              <SocialIcon
-                type="youtube"
-                raised
-                light={this.props.dark_mode ? false : true}
-                onPress={() =>
-                  Linking.openURL(
-                    "https://www.youtube.com/channel/UCRaDH0ERMqN5Zrz9pUjzwyw"
-                  )
-                }
-              />
-            </View>
-            {/* Powered by Section */}
-            <View
-              style={
-                {
-                  // borderTopWidth: 0,
-                  // borderColor: "white",
-                  // flexDirection: "row",
-                  // justifyContent: "space-evenly",
-                  // paddingTop: 5,
-                  // paddingBottom: 20,
-                  // backgroundColor: "pink"
-                }
-              }
-            >
-              <SocialIcon
-                button
-                title="Powered by the Verisurf API"
-                backgroundColor="pink"
-                raised={false}
-                padding={10}
-                // iconStyle={{
-                //   borderRadius: 0,
-                //   backgroundColor: 'transparent',
-                //   borderWidth: 0,
-                //   shadowOpacity: 0,
-                //   elevation: 0,
-                // }}""
-                underlayColor="$cardColor"
-                style={{ backgroundColor: "rgb(39,39,39)" }}
-                // light={this.props.dark_mode ? false : true}
-                type="github"
-                onPress={() =>
-                  Linking.openURL("https://github.com/verisurf/verisurf-api")
-                }
-              />
-            </View>
-
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>
-                Version {AppData["expo"]["version"]}
+        <View style={styles.container}>
+          <TouchableOpacity onPress={_signOutAsync}>
+            <View style={styles.containerSection}>
+              <Text style={{ fontSize: RFValue(15), color: "red" }}>
+                Sign Out
               </Text>
             </View>
-          </View>
-        </ScrollView>
-      </View>
-    );
-  }
-}
+          </TouchableOpacity>
+        </View>
 
-function mapStateToProps(state) {
-  return {
-    IPAddress: state.IPAddress,
-    build_tol: state.build_tol,
-    dark_mode: state.dark_mode,
-    decimal_places: state.decimal_places,
-    response_time: state.response_time,
-    auto_response_time: state.auto_response_time,
-    plan_number: state.plan_number,
-    device_number: state.device_number,
-    single_or_average: state.single_or_average,
-    in_tolerance_color: state.in_tolerance_color,
-    oot_pos_color: state.oot_pos_color,
-    oot_neg_color: state.oot_neg_color,
-  };
-}
+        <View style={styles.endSeperator}>
+          <SocialIcon
+            type="twitter"
+            raised
+            light={!props.dark_mode}
+            onPress={() => Linking.openURL("https://twitter.com/verisurf")}
+          />
+          <SocialIcon
+            type="linkedin"
+            raised
+            light={!props.dark_mode}
+            onPress={() =>
+              Linking.openURL("https://www.linkedin.com/company/verisurf/")
+            }
+          />
+          <SocialIcon
+            type="facebook"
+            raised
+            light={!props.dark_mode}
+            onPress={() =>
+              Linking.openURL("https://www.facebook.com/verisurf/")
+            }
+          />
+          <SocialIcon
+            type="instagram"
+            raised
+            light={!props.dark_mode}
+            onPress={() =>
+              Linking.openURL("https://www.instagram.com/verisurf/")
+            }
+          />
+          <SocialIcon
+            type="youtube"
+            raised
+            light={!props.dark_mode}
+            onPress={() =>
+              Linking.openURL(
+                "https://www.youtube.com/channel/UCRaDH0ERMqN5Zrz9pUjzwyw"
+              )
+            }
+          />
+        </View>
 
-function mapDispatchToProps(dispatch) {
-  return {
-    updating_value: (value, name) =>
-      dispatch({ type: "UPDATING_VALUE", value, name }),
-    finalizetol: (text) => dispatch({ type: "FINALIZE_TOL", text }),
-    themeswitch: (value, name) =>
-      dispatch({ type: "THEME_SWITCH", value, name }),
+        <View>
+          <SocialIcon
+            button
+            title="Powered by the Verisurf API"
+            raised={false}
+            padding={10}
+            underlayColor="#333"
+            style={{ backgroundColor: "rgb(39,39,39)" }}
+            type="github"
+            onPress={() =>
+              Linking.openURL("https://github.com/verisurf/verisurf-api")
+            }
+          />
+        </View>
 
-    toggleswitch: (value, name) =>
-      dispatch({ type: "TOGGLE_SWITCH", value, name }),
-    themeswitch: (value, name) =>
-      dispatch({ type: "THEME_SWITCH", value, name }),
-    change_value_only: (value, name) =>
-      dispatch({ type: "CHANGE_VALUE", value, name }),
-  };
-}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            Version {AppData["expo"]["version"]}
+          </Text>
+        </View>
+      </ScrollView>
+    </View>
+  );
+};
+
+const mapStateToProps = (state) => ({
+  IPAddress: state.IPAddress,
+  build_tol: state.build_tol,
+  dark_mode: state.dark_mode,
+  decimal_places: state.decimal_places,
+  response_time: state.response_time,
+  auto_response_time: state.auto_response_time,
+  plan_number: state.plan_number,
+  device_number: state.device_number,
+  single_or_average: state.single_or_average,
+  in_tolerance_color: state.in_tolerance_color,
+  oot_pos_color: state.oot_pos_color,
+  oot_neg_color: state.oot_neg_color,
+});
+
+const mapDispatchToProps = (dispatch) => ({
+  updating_value: (value, name) =>
+    dispatch({ type: "UPDATING_VALUE", value, name }),
+  finalizetol: (text) => dispatch({ type: "FINALIZE_TOL", text }),
+  themeswitch: (value, name) =>
+    dispatch({ type: "THEME_SWITCH", value, name }),
+  toggleswitch: (value, name) =>
+    dispatch({ type: "TOGGLE_SWITCH", value, name }),
+  change_value_only: (value, name) =>
+    dispatch({ type: "CHANGE_VALUE", value, name }),
+});
 
 export default connect(mapStateToProps, mapDispatchToProps)(SettingsScreen);
 
-const styles = EStyleSheet.create({
+  const styles = EStyleSheet.create({
+
+  // ... (styles remain the same)
   containerList: {
     flex: 1,
     // backgroundColor: '#000',
@@ -1036,7 +370,7 @@ const styles = EStyleSheet.create({
       width: 0,
       height: 1,
     },
-    
+
     shadowOpacity: 0.18,
     shadowRadius: 1.0,
     elevation: 1,
@@ -1050,7 +384,7 @@ const styles = EStyleSheet.create({
       width: 0,
       height: 1,
     },
-    
+
     shadowOpacity: 0.18,
     shadowRadius: 1.0,
     elevation: 1,

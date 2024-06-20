@@ -44,26 +44,29 @@ const BuildScreen = (props) => {
   const [simulationInterval, setSimulationInterval] = useState(null);
 
   useEffect(() => {
-    console.log(isFocused);
+    console.log("BuildScreen: simulateData decimoot_neg_coloral  =", props.oot_neg_color);
+    console.log("BuildScreen: simulateData oot_neg_color  =", props.oot_neg_color);
+    console.log("BuildScreen: simulateData oot_neg_color  =", props.oot_neg_color);
+    console.log("BuildScreen: simulateData build tolerance  =", props.build_tol);
+    console.log("BuildScreen: simulateData build tolerance  =", props.single_or_average);
+
+
+
     if (isFocused) {
-      console.log("found isFocused attempting SetupConnection()");
-      // Clean up the previous interval before setting up a new one
+      // console.log("found isFocused attempting SetupConnection()");
       cleanupConnection();
-      // Set up the connection and start the simulation
       setupConnection();
     } else {
-      // Clean up the connection and stop the simulation
-      console.log("found cleanupConnection attempting cleanupConnection()");
       cleanupConnection();
     }
+    console.log("BuildScreen: decimal_places =", props.decimal_places);
 
     return () => {
-      // Clean up the connection and stop the simulation on component unmount
       cleanupConnection();
     };
-  }, [isFocused]);
-
+  }, [isFocused, props.decimal_places, props.build_tol, props.single_or_average, props.in_tolerance_color, props.oot_pos_color, props.oot_neg_color, props.device_number]);
   const setupConnection = useCallback(() => {
+
     console.log("BuildScreen: setupConnection");
 
     if (props.buildTutorial === false) {
@@ -88,7 +91,7 @@ const BuildScreen = (props) => {
       }));
       beginStream(newWs);
     }
-  }, [props.IPAddress, props.port, props.buildTutorial]);
+  }, [props.IPAddress, props.port, props.buildTutorial, props.decimal_places]);
 
   const cleanupConnection = () => {
     if (ws) {
@@ -100,93 +103,77 @@ const BuildScreen = (props) => {
       setSimulationInterval(null);
     }
   };
-  
 
   const simulateData = () => {
-    if (isFocused) {
-      
-      console.log("BuildScreen: simulateData");
+    console.log("BuildScreen: simulateData decimal  =", props.decimal_places);
+    console.log("BuildScreen: simulateData decimoot_neg_coloral  =", props.oot_neg_color);
+    console.log("BuildScreen: simulateData oot_neg_color  =", props.oot_neg_color);
+    console.log("BuildScreen: simulateData oot_neg_color  =", props.oot_neg_color);
+
+
+
+
     return setInterval(() => {
-      console.log(`Starting SIMULATE: ${state.xdEcho}, ${state.ydEcho}, ${state.zdEcho}, ${state.d3Echo}`);
-  
-      // Generate new random values within the range 0.04 to 0.045
       const generateRandomValue = () => {
         const randomValue = Math.random() * 0.005 + 0.004;
         return randomValue.toFixed(props.decimal_places);
       };
-  
+
       const randomX = generateRandomValue();
       const randomY = generateRandomValue();
       const randomZ = generateRandomValue();
       const randomD3 = Math.sqrt(randomX ** 2 + randomY ** 2 + randomZ ** 2).toFixed(props.decimal_places);
+  
+      const xdColor = randomX > props.build_tol ? props.oot_pos_color : props.in_tolerance_color;
+      const ydColor = randomY > props.build_tol ? props.oot_pos_color : props.in_tolerance_color;
+      const zdColor = randomZ > props.build_tol ? props.oot_pos_color : props.in_tolerance_color;
+      const randomD3Color = randomD3 > props.build_tol ? props.oot_pos_color : props.in_tolerance_color;
+  
+      const bBarVal = parseFloat((randomD3 / props.build_tol).toFixed(props.decimal_places));
+      const progressColor = bBarVal > 1 ? props.oot_pos_color : props.in_tolerance_color;
+      const negProgColor = bBarVal < -1 ? props.oot_neg_color : props.in_tolerance_color;
+      const negTol = -Math.abs(bBarVal);
 
-      const xdColor =
-        randomX > props.build_tol
-          ? props.oot_pos_color
-          : props.in_tolerance_color;
-      const ydColor =
-        randomY > props.build_tol
-          ? props.oot_pos_color
-          : props.in_tolerance_color;
-      const zdColor =
-        randomZ > props.build_tol
-          ? props.oot_pos_color
-          : props.in_tolerance_color;
-      const randomD3Color =
-        randomD3 > props.build_tol
-          ? props.oot_pos_color
-          : props.in_tolerance_color;
-
-          const bBarVal = parseFloat((randomD3 / props.build_tol).toFixed(props.decimal_places));
-          const progressColor = bBarVal > 1 ? props.oot_pos_color : props.in_tolerance_color;
-          const negProgColor = bBarVal < -1 ? props.oot_neg_color : props.in_tolerance_color;
-          const negTol = -Math.abs(bBarVal);
-
-      setState((prevState) => {
-        const newState = {
-          ...prevState,
-          xdEcho: randomX,
-          ydEcho: randomY,
-          zdEcho: randomZ,
-          d3Echo: randomD3,
-          ootEcho: randomD3Color,
-          xdColor: xdColor,
-          ydColor: ydColor,
-          zdColor: zdColor,
-          bBarEcho: bBarVal,
-          progressColor: progressColor,
-          negProgColor: negProgColor,
-          negTol: negTol,
-        };
-        console.log("Initial Values:", {randomX});
-
-        return newState;
-      });
+      setState((prevState) => ({
+        ...prevState,
+        xdEcho: randomX,
+        ydEcho: randomY,
+        zdEcho: randomZ,
+        d3Echo: randomD3,
+        ootEcho: randomD3Color,
+        xdColor: xdColor,
+        ydColor: ydColor,
+        zdColor: zdColor,
+        bBarEcho: bBarVal,
+        progressColor: progressColor,
+        negProgColor: negProgColor,
+        negTol: negTol,
+      }));
     }, 500);
-  }
   };
 
   const onPress = () => {
-    // backgroundColor: EStyleSheet.value("$bgColor")
-    if (ws.readyState === WebSocket.OPEN) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send("<measure_set_" + props.single_or_average + " />");
       ws.send("<measure_trigger />");
       Vibration.vibrate([0, 10]);
     }
   };
 
-  const onPressOut = (val) => {
-    if (longPressed === 1) {
+  const onPressOut = () => {
+    if (longPressed === 1 && ws) {
       ws.send("<measure_trigger />");
       longPressed = 0;
     }
   };
 
   const onLongPress = () => {
-    ws.send("<measure_set_cloud />");
-    ws.send("<measure_trigger />");
-    Vibration.vibrate([0, 50]);
-    longPressed = 1;
+    if (ws) {
+      ws.send("<measure_set_cloud />");
+      ws.send("<measure_trigger />");
+      Vibration.vibrate([0, 50]);
+      longPressed = 1;
+    }
   };
 
   const beginStream = (newWs) => {
@@ -223,7 +210,7 @@ const BuildScreen = (props) => {
             xdVal > props.build_tol
               ? props.oot_pos_color
               : props.in_tolerance_color;
-          if (xdColor != props.oot_pos_color) {
+          if (xdColor !== props.oot_pos_color) {
             xdColor =
               xdVal < -props.build_tol
                 ? props.oot_neg_color
@@ -236,7 +223,7 @@ const BuildScreen = (props) => {
             ydVal > props.build_tol
               ? props.oot_pos_color
               : props.in_tolerance_color;
-          if (ydColor != props.oot_pos_color) {
+          if (ydColor !== props.oot_pos_color) {
             ydColor =
               ydVal < -props.build_tol
                 ? props.oot_neg_color
@@ -249,7 +236,7 @@ const BuildScreen = (props) => {
             zdVal > props.build_tol
               ? props.oot_pos_color
               : props.in_tolerance_color;
-          if (zdColor != props.oot_pos_color) {
+          if (zdColor !== props.oot_pos_color) {
             zdColor =
               zdVal < -props.build_tol
                 ? props.oot_neg_color
@@ -262,7 +249,7 @@ const BuildScreen = (props) => {
             d3Val > props.build_tol
               ? props.oot_pos_color
               : props.in_tolerance_color;
-          if (d3Color != props.oot_pos_color) {
+          if (d3Color !== props.oot_pos_color) {
             d3Color =
               d3Val < -props.build_tol
                 ? props.oot_neg_color
@@ -271,18 +258,16 @@ const BuildScreen = (props) => {
           var bBarVal = parseFloat(
             (d3Val / props.build_tol).toFixed(props.decimal_places)
           );
-          if (bBarVal > 0) {
-            var progColor =
-              bBarVal > 1 && bBarVal != null
-                ? props.oot_pos_color
-                : props.in_tolerance_color;
-            var negProgVal = 0;
-          } else {
+          var progColor = bBarVal > 1
+            ? props.oot_pos_color
+            : props.in_tolerance_color;
+          var negProgVal = 0;
+          if (bBarVal <= 0) {
             var negProg =
-              bBarVal < -1 && bBarVal != null
+              bBarVal < -1
                 ? props.oot_neg_color
                 : props.in_tolerance_color;
-            var negProgVal = -bBarVal;
+            negProgVal = -bBarVal;
             bBarVal = 0;
           }
         }
@@ -338,7 +323,6 @@ const BuildScreen = (props) => {
             paddingTop: 19,
           }}
         >
-          {console.log('FROM RENDER:' + state.xdEcho, state.ydEcho, state.zdEcho, state.d3Echo)}
           <Text style={styles.footerTitle}>
             Tap - Single | Hold - Continuous
           </Text>
@@ -428,7 +412,6 @@ const BuildScreen = (props) => {
                 color: state.xdColor,
               }}
             >
-              {console.log("BuildScreen:", state.xdEcho)}
               {state.xdEcho}
             </Text>
 

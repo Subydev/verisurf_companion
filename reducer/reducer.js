@@ -17,16 +17,22 @@ const initialState = {
   new_plan_loaded: false,
   in_tolerance_color: '#1FCC4D',
   oot_pos_color: '#2573FF',
-  oot_neg_color: '#FF0000'
+  oot_neg_color: '#FF0000',
+  exampleInput: '',
+  exampleSlider: 50,
 };
 
 //The reducer ..reduces.. your function calls to figure out what you want to do with state.
 const reducer = (state = initialState, action) => {
+    console.log(action)
+
   switch(action.type){
+    
       case 'UPDATING_VALUE':
           return {
               ...state,
               [action.name]: action.value
+              
           };
       case 'FINALIZE_TOL':
           try {
@@ -64,5 +70,4 @@ const reducer = (state = initialState, action) => {
           return state;
   }
 };
-
 export default reducer;

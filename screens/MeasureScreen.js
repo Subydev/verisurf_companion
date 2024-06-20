@@ -5,7 +5,6 @@ import { RFPercentage, RFValue } from "react-native-responsive-fontsize";
 import { useFocusEffect } from "@react-navigation/native";
 import EStyleSheet from "react-native-extended-stylesheet";
 import { connect } from "react-redux";
-import registerForPushNotificationsAsync from "../components/notifications";
 import { Picker } from "@react-native-picker/picker";
 import { Text, View, TouchableHighlight, Vibration, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -34,9 +33,15 @@ const MeasureScreen = (props) => {
     scaler: 1,
   });
 
+  useEffect(() => {
+    console.log("Decimal places updated: ", props.decimal_places);
+    // Any additional logic to handle decimal places changes can be placed here
+  }, [props.decimal_places]);
+
   useFocusEffect(
     useCallback(() => {
       console.log("MeasureScreen focused");
+      console.log(props.decimal_places)
       if (props.IPAddress === "") {
         return;
       }
@@ -56,7 +61,7 @@ const MeasureScreen = (props) => {
         error_detector = false;
         newWs.close();
       };
-    }, [props.IPAddress, props.port])
+    }, [props.IPAddress, props.port, props.decimal_places])
   );
 
   const onPickerValueChange = (value, index) => {
@@ -87,14 +92,13 @@ const MeasureScreen = (props) => {
       ...prevState,
       backgroundColor: "red",
     }));
-    if(props.IPAddress !== ""){
+    if (props.IPAddress !== "") {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(`<measure_set_${props.single_or_average} />`);
         ws.send("<measure_trigger />");
         Vibration.vibrate([0, 10]);
       }
     }
-
   };
 
   const onPressOut = () => {
@@ -206,29 +210,15 @@ const MeasureScreen = (props) => {
       };
     }
   };
+
   useEffect(() => {
     if (Constants.isDevice && props.is_registered === false) {
       registerForPushNotificationsAsync().then((value) => {
         props.change_value_only(value, "is_registered");
       });
     }
-    // if (props.IPAddress === "") {
-    //   Alert.alert(
-    //     "Preview Mode",
-    //     "Since IP was left blank, you have entered preview mode. The app is not connected, but you may freely roam the components.\n\nYou may sign out now, or visit settings and sign out later.",
-    //     [
-    //       {
-    //         text: "Sign Out",
-    //         onPress: async () => {
-    //           await AsyncStorage.removeItem("userToken");
-    //           props.navigation.navigate("Auth");
-    //         },
-    //       },
-    //       { text: "Continue" },
-    //     ]
-    //   );
-    // }
-  }, [props.IPAddress, props.is_registered, props.navigation]);
+  }, [props.is_registered]);
+
   useEffect(() => {
     if (props.statusColor === "red") {
       setState((prevState) => ({
@@ -242,6 +232,7 @@ const MeasureScreen = (props) => {
       }));
     }
   }, [props.statusColor, state.meastype]);
+
   const {
     xEcho,
     yEcho,
@@ -255,6 +246,7 @@ const MeasureScreen = (props) => {
     underlayColor,
     scaler,
   } = state;
+
   return (
     <TouchableHighlight
       underlayColor={underlayColor}
@@ -271,7 +263,6 @@ const MeasureScreen = (props) => {
         <View
           style={{
             flexDirection: "column",
-            height: 90,
             borderColor: EStyleSheet.value("$textColor"),
             borderWidth: 0,
             alignItems: "center",
@@ -290,7 +281,7 @@ const MeasureScreen = (props) => {
             }
           />
         </View>
-        <View key={props.dark_mode}>
+        <View style={{}} key={props.dark_mode}>
           <Picker
             selectedValue={meastype}
             itemStyle={styles.pickerItem}
@@ -310,7 +301,7 @@ const MeasureScreen = (props) => {
             <Picker.Item label={"Cone"} value={"cone"} />
           </Picker>
         </View>
-        <View style={{ flexDirection: "row", flex: 1 }}>
+        <View style={{ flexDirection: "row", flex: 1 , marginTop: RFValue(-20)}}>
           <View style={styles.droLeftBox}>
             <Text adjustsFontSizeToFit={true} style={styles.droText}>
               X:
@@ -332,7 +323,7 @@ const MeasureScreen = (props) => {
                 color: EStyleSheet.value("$textColor"),
               }}
             >
-              {props.IPAddress === "" ? "188.7101" : {xEcho}}
+              {props.IPAddress === "" ? "188.7101" : xEcho}
             </Text>
             <Text
               numberOfLines={1}
@@ -344,7 +335,7 @@ const MeasureScreen = (props) => {
                 color: EStyleSheet.value("$textColor"),
               }}
             >
-              {props.IPAddress === "" ? "32.1902" : {yEcho}}
+              {props.IPAddress === "" ? "32.1902" : yEcho}
             </Text>
             <Text
               numberOfLines={1}
@@ -355,7 +346,7 @@ const MeasureScreen = (props) => {
                 color: EStyleSheet.value("$textColor"),
               }}
             >
-              {props.IPAddress === "" ? "-4.0199" : {zEcho}}
+              {props.IPAddress === "" ? "-4.0199" : zEcho}
             </Text>
           </View>
         </View>
@@ -369,34 +360,31 @@ const MeasureScreen = (props) => {
             paddingBottom: 2,
             paddingTop: 6,
             backgroundColor: EStyleSheet.value("$cardColor"),
-
             opacity: 0.8,
             borderTopWidth: 0,
             borderRadius: 8,
           }}
         >
           <View
-           style={{
-            borderRadius: 5,
-            width: 10,
-            height: 10,
-            backgroundColor:
-              props.IPAddress === "" ? "#00ff00" : props.statusColor,
-          }} 
+            style={{
+              borderRadius: 5,
+              width: 10,
+              height: 10,
+              backgroundColor:
+                props.IPAddress === "" ? "#00ff00" : props.statusColor,
+            }}
           ></View>
           <Text style={styles.footerText}>
-          Connected To:{" "}
-              {props.IPAddress === ""
-                ? "Master3DGage "
-                : `${state.dNameEcho} (${state.dInfoEcho})`}
-            {/* Connected To: {dNameEcho} ({dInfoEcho}) */}
+            Connected To:{" "}
+            {props.IPAddress === ""
+              ? "Master3DGage "
+              : `${dNameEcho} (${dInfoEcho})`}
           </Text>
           <Text style={styles.footerText}>
-          Probe Radius:{" "}
-              {props.IPAddress === ""
-                ? "3mm | 67.4°F"
-                : `${state.dRadiusEcho}mm | Temperature: ${state.dTempEcho}°F`}
-            {/* Probe Radius: {dRadiusEcho} | Temperature: {dTempEcho} */}
+            Probe Radius:{" "}
+            {props.IPAddress === ""
+              ? "3mm | 67.4°F"
+              : `${dRadiusEcho}mm | Temperature: ${dTempEcho}°F`}
           </Text>
         </View>
       </React.Fragment>
@@ -429,6 +417,7 @@ function mapDispatchToProps(dispatch) {
   };
 }
 export default connect(mapStateToProps, mapDispatchToProps)(MeasureScreen);
+
 const styles = EStyleSheet.create({
   container: {
     flex: 1,
@@ -438,8 +427,10 @@ const styles = EStyleSheet.create({
   },
   pickerItem: {
     color: "$textColor",
-    height: 120,
-    fontSize: 32,
+    // height: 120,
+    // fontSize: 32,
+    fontSize: RFValue(20),  // Adjust this value as needed
+    height: RFValue(100),  // Adjust this value as needed
     alignContent: "center",
     flexDirection: "column",
   },
@@ -448,6 +439,8 @@ const styles = EStyleSheet.create({
     borderColor: "$textColor",
     borderWidth: 1,
     borderRadius: 50,
+    fontSize: RFValue(20),  // Adjust this value as needed
+    // height: RFValue(100),  // Adjust this value as needed
     borderBottomWidth: 1,
   },
   droText: {
