@@ -9,6 +9,7 @@ import ReportsScreen from '../screens/ReportsScreen';
 import MeasureScreen from "../screens/MeasureScreen";
 import AutoScreen from '../screens/AutoScreen';
 import Scanner from '../screens/Scanner';
+import { useSelector, useDispatch } from 'react-redux';
 import Colors from '../constants/Colors';
 import DetailScreen from '../screens/SettingsScreens/DetailScreen'; // Import DetailScreen
 import AppearanceSettingsScreen from '../screens/SettingsScreens/AppearanceSettingsScreen';
@@ -22,6 +23,7 @@ import { NavigationContainer } from '@react-navigation/native'
 import { BlurView } from 'expo-blur';
 import CustomTabBar from '../components/CustomTabBar';
 import { useTabBarHeight } from '../components/useTabBarHeight';
+import * as ScreenOrientation from 'expo-screen-orientation';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator ();
@@ -34,17 +36,38 @@ function BuildStackScreen() {
   console.log('BuildStackScreen: Rendering');
   return (
     <Stack.Navigator screenOptions={screenOptions}>
-      <Stack.Screen name="Build" component={BuildScreen} />
+      <Stack.Screen 
+        name="BuildMain" 
+        component={BuildScreen}
+        listeners={{
+          focus: async () => {
+            console.log("Build screen focused");
+            try {
+              await ScreenOrientation.unlockAsync();
+              console.log("Orientation unlocked for Build screen");
+            } catch (error) {
+              console.error("Failed to unlock orientation for Build screen:", error);
+            }
+          },
+          blur: async () => {
+            console.log("Build screen blurred");
+            try {
+              await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+              console.log("Orientation locked to portrait for other screens");
+            } catch (error) {
+              console.error("Failed to lock orientation to portrait:", error);
+            }
+          },
+        }}
+      />
     </Stack.Navigator>
   );
 }
-
 function SettingsStackScreen() {
   console.log('SettingsStackScreen: Rendering');
   return (
-
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="SettingsMain" component={SettingsScreen} />
       <Stack.Screen name="Scanner" component={Scanner} />
       <Stack.Screen name="Details" component={DetailScreen} />
       <Stack.Screen name="AppearanceSettings" component={AppearanceSettingsScreen} />
@@ -62,7 +85,7 @@ function AutoStackScreen() {
   console.log('AutoStackScreen: Rendering');
   return (
     <Stack.Navigator screenOptions={screenOptions}>
-      <Stack.Screen name="Auto" component={AutoScreen} />
+      <Stack.Screen name="AutoMain" component={AutoScreen} />
     </Stack.Navigator>
   );
 }
@@ -71,7 +94,7 @@ function MeasureStackScreen() {
   console.log('MeasureStackScreen: Rendering');
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Measure" component={MeasureScreen} />
+      <Stack.Screen name="MeasureMain" component={MeasureScreen} />
     </Stack.Navigator>
   );
 }
@@ -87,6 +110,8 @@ function ReportsStackScreen() {
 
 function MainTabNavigator() {
   const tabBarHeight = useTabBarHeight();
+  const dispatch = useDispatch();
+
   return (
     <Tab.Navigator 
       tabBar={props => <CustomTabBar {...props} height={tabBarHeight} />}
@@ -97,8 +122,17 @@ function MainTabNavigator() {
       <Tab.Screen name="Measure" component={MeasureStackScreen} />
       <Tab.Screen name="Reports" component={ReportsStackScreen} />
       <Tab.Screen name="Auto" component={AutoStackScreen} />
-      <Tab.Screen name="Build" component={BuildStackScreen} />
-      <Tab.Screen name="Settings" component={SettingsStackScreen} />
+      <Tab.Screen
+        name="Build" 
+        component={BuildStackScreen}
+        options={{
+          unmountOnBlur: true, // This will unmount the screen when it's not focused
+        }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsStackScreen}
+      />
     </Tab.Navigator>
   );
 }

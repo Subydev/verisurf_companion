@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { RFPercentage, RFValue } from "react-native-responsive-fontsize";
 import { useFocusEffect } from "@react-navigation/native";
-import EStyleSheet from "react-native-extended-stylesheet";
+import EStyleSheet from 'react-native-extended-stylesheet';
+
 import { connect } from "react-redux";
 import {
   Text,
@@ -9,14 +10,22 @@ import {
   TouchableHighlight,
   Vibration,
   ActivityIndicator,
+  Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTabBarHeight } from "../components/useTabBarHeight";
+import CustomStatusBar from "../components/CustomStatusBar.js";
 
 let propsInObj = 0;
 let objNames = [];
 let objValues = [];
 import reportData from "../constants/reportData.json";
 
+let longPressed = 0;
+
 const AutoScreen = (props) => {
+  const insets = useSafeAreaInsets();
+
   const [isMounted, setIsMounted] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [ws, setWs] = useState(null);
@@ -30,7 +39,7 @@ const AutoScreen = (props) => {
     measDataState: {},
     hasMeasEcho: "",
     responsiveText: RFPercentage(4.1),
-    backgroundColor: EStyleSheet.value("$bgColor"),
+    // backgroundColor: EStyleSheet.value("$bgColor"),
     underlayColor: EStyleSheet.value("$bgColor"),
     disconnected: true,
     objNames: [],
@@ -38,18 +47,39 @@ const AutoScreen = (props) => {
   });
 
   const onPress = () => {
+    setState(prevState => ({
+      ...prevState,
+      underlayColor: "red"
+    }));
     if (isMounted && ws.readyState === WebSocket.OPEN) {
       ws.send(`<measure_set_${props.single_or_average} />`);
       ws.send("<measure_trigger />");
       Vibration.vibrate([0, 10]);
     }
-  };
+    longPressed = 0;
+console.log(state.underlayColor);  };
 
   const onLongPress = () => {
+    state.underlayColor= "red";
+
     if (isMounted) {
       ws.send("<inspect_plan_start id='0' />");
     }
+    longPressed = 1;
+
   };
+
+  const onPressOut = () => {
+    state.underlayColor= "red";
+
+    if (longPressed === 1 && ws) {
+      ws.send("<measure_trigger />");
+    }
+    longPressed = 0;
+    console.log("onPressOut");
+
+  };
+
   useEffect(() => {
     // Update the state when props.decimal_places changes
     setState((prevState) => ({
@@ -224,29 +254,37 @@ const AutoScreen = (props) => {
   ));
   
   return (
-    
+    <View style={styles.container}>
+    <View
+      style={[
+        styles.contentContainer,
+        { paddingTop: insets.top, paddingBottom: insets.bottom + 80 },
+      ]}
+    >
     <TouchableHighlight
-      underlayColor={state.underlayColor}
-      onPress={onPress}
+  underlayColor={state.underlayColor}
+  onPress={onPress}
+      onPressOut={onPressOut}
       onLongPress={onLongPress}
-      style={styles.container}
-      backgroundColor={EStyleSheet.value("$bgColor")}
+      delayLongPress={500}
+      activeOpacity={1}
+      style={[
+        styles.container,
+        { backgroundColor: EStyleSheet.value("$bgColor") },
+        
+      ]}
     >
       <React.Fragment>
         <View
           style={{
-            flexDirection: "column",
-            height: 90,
-            borderColor: EStyleSheet.value("$textColor"),
-            borderWidth: 0,
             alignItems: "center",
-            justifyContent: "space-around",
-            paddingTop: 50,
+            justifyContent: "center",
+            paddingVertical: RFValue(19),
           }}
         >
-          <Text style={styles.footerTitle}>
-            Tap - Measure Point | Hold - Start Plan
-          </Text>
+        <Text style={styles.footerTitle}>
+          Tap - Single | Hold - Continuous
+        </Text>
         </View>
 
         <View style={styles.justMeasuredView}>
@@ -290,8 +328,11 @@ const AutoScreen = (props) => {
             justifyContent: "space-around",
             paddingBottom: 2,
             paddingTop: 6,
+            position: "relative",
             backgroundColor: EStyleSheet.value("$cardColor"),
-            opacity: 0.8,
+            // backgroundColor: "pink",
+            marginBottom:RFValue(-19),
+            opacity: .8,
             borderTopWidth: 0,
             borderRadius: 8,
           }}
@@ -316,6 +357,9 @@ const AutoScreen = (props) => {
         </View>
       </React.Fragment>
     </TouchableHighlight>
+    </View>
+    </View>
+    
   );
 };
 
@@ -352,13 +396,21 @@ const styles = EStyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "$bgColor",
-    alignContent: "flex-start",
+    // alignContent: "flex-start",
   },
   text: {
     color: "$textColor",
   },
+  contentContainer: {
+    flex: 1,
+    // backgroundColor: "purple",
+    marginBottom: 20, // Add some space for the CustomStatusBar
+  },
+
   justMeasuredView: {
-    height: RFValue(55),
+    // height: RFValue(55),
+    height: Platform.OS === "ios" ? RFValue(55) : RFValue(50),
+// backgroundColor:"pink",
     borderWidth: 0,
     borderColor: "$textColor",
     alignItems: "center",
@@ -367,6 +419,19 @@ const styles = EStyleSheet.create({
   justMeasuredText: {
     color: "$textColor",
     fontSize: RFPercentage(3.5),
+    // backgroundColor:"red",
+  },
+  footerTitle: {
+    color: "$textColor",
+    fontSize: RFValue(18),
+
+  },
+
+  headerContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: RFValue(0),
+    backgroundColor:"yellow",
   },
   tableView: {
     flex: 1,
@@ -416,7 +481,7 @@ const styles = EStyleSheet.create({
     color: "$textColor",
   },
   footerTitle: {
-    fontSize: RFValue(16),
+    fontSize: RFValue(18),
     color: "$textColor",
     paddingBottom: RFValue(7),
   },

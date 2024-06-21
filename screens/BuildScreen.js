@@ -7,15 +7,25 @@ import {
   Vibration,
   ActivityIndicator,
   Alert,
+  Switch,
+  
 } from "react-native";
 import { RFPercentage, RFValue } from "react-native-responsive-fontsize";
 import { useIsFocused } from "@react-navigation/native";
 import { connect } from "react-redux";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import CustomStatusBar from "../components/CustomStatusBar.js";
+import { useTabBarHeight } from "../components/useTabBarHeight";
+import { Dimensions } from "react-native";
+import * as ScreenOrientation from 'expo-screen-orientation';
+
 import EStyleSheet from "react-native-extended-stylesheet";
 
 let longPressed = 0;
 
 const BuildScreen = (props) => {
+  const insets = useSafeAreaInsets();
+
   const [state, setState] = useState({
     xdEcho: "0",
     ydEcho: "0",
@@ -34,7 +44,6 @@ const BuildScreen = (props) => {
     ootEcho: "white",
     negTol: "0.001",
     negProgColor: "#1fcc4d",
-    isLandscape: false,
     underlayColor: EStyleSheet.value("$bgColor"),
     disconnected: true,
   });
@@ -43,15 +52,49 @@ const BuildScreen = (props) => {
   const [ws, setWs] = useState(null);
   const [simulationInterval, setSimulationInterval] = useState(null);
 
+  const [isLandscape, setIsLandscape] = useState(false);
+  
   useEffect(() => {
-    console.log("BuildScreen: simulateData decimoot_neg_coloral  =", props.oot_neg_color);
-    console.log("BuildScreen: simulateData oot_neg_color  =", props.oot_neg_color);
-    console.log("BuildScreen: simulateData oot_neg_color  =", props.oot_neg_color);
-    console.log("BuildScreen: simulateData build tolerance  =", props.build_tol);
-    console.log("BuildScreen: simulateData build tolerance  =", props.single_or_average);
+    async function logOrientation() {
+      const orientation = await ScreenOrientation.getOrientationAsync();
+      console.log("Current orientation:", orientation);
+    }
+    logOrientation();
+  }, []);
 
+  useEffect(() => {
+    console.log("Setting up orientation listener");
+    ScreenOrientation.unlockAsync()
+      .then(() => console.log("Orientation unlocked"))
+      .catch(err => console.error("Failed to unlock orientation", err));
+    
+    const subscription = ScreenOrientation.addOrientationChangeListener((event) => {
+      console.log("Orientation change event received", event);
+      handleOrientationChange(event);
+    });
+    return () => {
+      console.log("Cleaning up orientation listener");
+      ScreenOrientation.removeOrientationChangeListener(subscription);
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP)
+        .then(() => console.log("Orientation locked to portrait"))
+        .catch(err => console.error("Failed to lock orientation", err));
+    };
+  }, []);
 
+  const [renderKey, setRenderKey] = useState(0);
 
+  const handleOrientationChange = (event) => {
+    console.log("Orientation changed", event);
+    const { orientationInfo } = event;
+    const newIsLandscape = 
+      orientationInfo.orientation === ScreenOrientation.Orientation.LANDSCAPE_LEFT ||
+      orientationInfo.orientation === ScreenOrientation.Orientation.LANDSCAPE_RIGHT;
+    
+    setIsLandscape(newIsLandscape);
+    setRenderKey(prev => prev + 1); // Force re-render
+  };
+
+  useEffect(() => {
     if (isFocused) {
       // console.log("found isFocused attempting SetupConnection()");
       cleanupConnection();
@@ -59,14 +102,20 @@ const BuildScreen = (props) => {
     } else {
       cleanupConnection();
     }
-    console.log("BuildScreen: decimal_places =", props.decimal_places);
-
     return () => {
       cleanupConnection();
     };
-  }, [isFocused, props.decimal_places, props.build_tol, props.single_or_average, props.in_tolerance_color, props.oot_pos_color, props.oot_neg_color, props.device_number]);
+  }, [
+    isFocused,
+    props.decimal_places,
+    props.build_tol,
+    props.single_or_average,
+    props.in_tolerance_color,
+    props.oot_pos_color,
+    props.oot_neg_color,
+    props.device_number,
+  ]);
   const setupConnection = useCallback(() => {
-
     console.log("BuildScreen: setupConnection");
 
     if (props.buildTutorial === false) {
@@ -106,12 +155,18 @@ const BuildScreen = (props) => {
 
   const simulateData = () => {
     console.log("BuildScreen: simulateData decimal  =", props.decimal_places);
-    console.log("BuildScreen: simulateData decimoot_neg_coloral  =", props.oot_neg_color);
-    console.log("BuildScreen: simulateData oot_neg_color  =", props.oot_neg_color);
-    console.log("BuildScreen: simulateData oot_neg_color  =", props.oot_neg_color);
-
-
-
+    console.log(
+      "BuildScreen: simulateData decimoot_neg_coloral  =",
+      props.oot_neg_color
+    );
+    console.log(
+      "BuildScreen: simulateData oot_neg_color  =",
+      props.oot_neg_color
+    );
+    console.log(
+      "BuildScreen: simulateData oot_neg_color  =",
+      props.oot_neg_color
+    );
 
     return setInterval(() => {
       const generateRandomValue = () => {
@@ -122,16 +177,34 @@ const BuildScreen = (props) => {
       const randomX = generateRandomValue();
       const randomY = generateRandomValue();
       const randomZ = generateRandomValue();
-      const randomD3 = Math.sqrt(randomX ** 2 + randomY ** 2 + randomZ ** 2).toFixed(props.decimal_places);
-  
-      const xdColor = randomX > props.build_tol ? props.oot_pos_color : props.in_tolerance_color;
-      const ydColor = randomY > props.build_tol ? props.oot_pos_color : props.in_tolerance_color;
-      const zdColor = randomZ > props.build_tol ? props.oot_pos_color : props.in_tolerance_color;
-      const randomD3Color = randomD3 > props.build_tol ? props.oot_pos_color : props.in_tolerance_color;
-  
-      const bBarVal = parseFloat((randomD3 / props.build_tol).toFixed(props.decimal_places));
-      const progressColor = bBarVal > 1 ? props.oot_pos_color : props.in_tolerance_color;
-      const negProgColor = bBarVal < -1 ? props.oot_neg_color : props.in_tolerance_color;
+      const randomD3 = Math.sqrt(
+        randomX ** 2 + randomY ** 2 + randomZ ** 2
+      ).toFixed(props.decimal_places);
+
+      const xdColor =
+        randomX > props.build_tol
+          ? props.oot_pos_color
+          : props.in_tolerance_color;
+      const ydColor =
+        randomY > props.build_tol
+          ? props.oot_pos_color
+          : props.in_tolerance_color;
+      const zdColor =
+        randomZ > props.build_tol
+          ? props.oot_pos_color
+          : props.in_tolerance_color;
+      const randomD3Color =
+        randomD3 > props.build_tol
+          ? props.oot_pos_color
+          : props.in_tolerance_color;
+
+      const bBarVal = parseFloat(
+        (randomD3 / props.build_tol).toFixed(props.decimal_places)
+      );
+      const progressColor =
+        bBarVal > 1 ? props.oot_pos_color : props.in_tolerance_color;
+      const negProgColor =
+        bBarVal < -1 ? props.oot_neg_color : props.in_tolerance_color;
       const negTol = -Math.abs(bBarVal);
 
       setState((prevState) => ({
@@ -153,6 +226,8 @@ const BuildScreen = (props) => {
   };
 
   const onPress = () => {
+    state.underlayColor = "red";
+
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send("<measure_set_" + props.single_or_average + " />");
       ws.send("<measure_trigger />");
@@ -161,20 +236,51 @@ const BuildScreen = (props) => {
   };
 
   const onPressOut = () => {
+    state.underlayColor = "red";
+
     if (longPressed === 1 && ws) {
       ws.send("<measure_trigger />");
-      longPressed = 0;
     }
+    longPressed = 0;
+    console.log("onPressOut");
   };
 
   const onLongPress = () => {
+    state.underlayColor = "red";
     if (ws) {
       ws.send("<measure_set_cloud />");
       ws.send("<measure_trigger />");
       Vibration.vibrate([0, 50]);
-      longPressed = 1;
     }
+    longPressed = 1;
   };
+  const getDynamicStyles = () => ({
+    droRightBox: {
+      flex: 1,
+      flexDirection: 'column',
+      borderWidth: 0,
+      borderColor: EStyleSheet.value('$textColor'),
+      paddingTop: isLandscape ? 0 : RFValue(20),
+      justifyContent: isLandscape ? 'center' : 'space-around',
+      alignItems: isLandscape ? 'center' : 'flex-end',
+    },
+    d3Text: {
+      fontVariant: ["tabular-nums"],
+      fontSize: isLandscape ? RFPercentage(40) : RFValue(60),
+      color: state.ootEcho,
+      textAlign: 'center',
+    },
+    landscapeContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: '100%',
+      height: '100%',
+      paddingLeft: insets.left,
+      paddingRight: insets.right,
+    },
+  });
+  const dynamicStyles = getDynamicStyles();
 
   const beginStream = (newWs) => {
     newWs.onopen = () => {
@@ -258,15 +364,12 @@ const BuildScreen = (props) => {
           var bBarVal = parseFloat(
             (d3Val / props.build_tol).toFixed(props.decimal_places)
           );
-          var progColor = bBarVal > 1
-            ? props.oot_pos_color
-            : props.in_tolerance_color;
+          var progColor =
+            bBarVal > 1 ? props.oot_pos_color : props.in_tolerance_color;
           var negProgVal = 0;
           if (bBarVal <= 0) {
             var negProg =
-              bBarVal < -1
-                ? props.oot_neg_color
-                : props.in_tolerance_color;
+              bBarVal < -1 ? props.oot_neg_color : props.in_tolerance_color;
             negProgVal = -bBarVal;
             bBarVal = 0;
           }
@@ -301,200 +404,118 @@ const BuildScreen = (props) => {
   };
 
   return (
-    <TouchableHighlight
-      underlayColor={state.underlayColor}
-      onPress={props.IPAddress === "" ? null : onPress}
-      onPressOut={props.IPAddress === "" ? null : onPressOut}
-      onLongPress={props.IPAddress === "" ? null : onLongPress}
+    <View style={styles.container} key={renderKey}>
+    <View
       style={[
-        styles.container,
-        { backgroundColor: EStyleSheet.value("$bgColor") },
+        styles.contentContainer,
+        isLandscape ? styles.landscapeContentContainer : null,
+        { 
+          paddingTop: isLandscape ? insets.top : insets.top, 
+          paddingBottom: isLandscape ? insets.bottom : insets.bottom + 80,
+          paddingLeft: isLandscape ? insets.left : 0,
+          paddingRight: isLandscape ? insets.right : 0,
+        },
       ]}
     >
-      <React.Fragment>
-        <View
-          style={{
-            flexDirection: "column",
-            height: 120,
-            borderColor: EStyleSheet.value("$textColor"),
-            borderWidth: 0,
-            alignItems: "center",
-            justifyContent: "space-around",
-            paddingTop: 19,
-          }}
+      <TouchableHighlight
+          underlayColor={state.underlayColor}
+          onPress={onPress}
+          onPressOut={onPressOut}
+          onLongPress={onLongPress}
+          delayLongPress={500}
+          activeOpacity={1}
+          style={[
+            styles.container,
+            { backgroundColor: EStyleSheet.value("$bgColor") },
+          ]}
         >
-          <Text style={styles.footerTitle}>
-            Tap - Single | Hold - Continuous
-          </Text>
-        </View>
-        <View style={{ flexDirection: "row" }}>
-          <View style={{ flex: 1, transform: [{ rotateY: "180deg" }] }}>
-            <View style={{ flexDirection: "row" }}>
-              <View style={{ flex: 1, transform: [{ rotateY: "180deg" }] }}>
-                <Bar
-                  progress={parseFloat(state.negTol)}
-                  width={null}
-                  height={32}
-                  color={state.negProgColor}
-                  borderWidth={0}
-                  borderRadius={0}
+          <React.Fragment>
+            {!isLandscape && (
+              <>
+                <View
+                  style={{
+                    alignItems: "center",
+                    justifyContent: "center",
+                    paddingVertical: RFValue(19),
+                  }}
+                >
+                  <Text style={styles.footerTitle}>
+                    Tap - Single | Hold - Continuous
+                  </Text>
+                </View>
+                <View style={{ flexDirection: "row" }}>
+                  <View style={{ flex: 1, transform: [{ rotateY: "180deg" }] }}>
+                    <View style={{ flexDirection: "row" }}>
+                      <View style={{ flex: 1, transform: [{ rotateY: "180deg" }] }}>
+                        <Bar
+                          progress={parseFloat(state.negTol)}
+                          width={null}
+                          height={32}
+                          color={state.negProgColor}
+                          borderWidth={0}
+                          borderRadius={0}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Bar
+                          progress={parseFloat(state.bBarEcho)}
+                          width={null}
+                          height={32}
+                          color={state.progressColor}
+                          borderWidth={0}
+                          borderRadius={0}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                </View>
+                <ActivityIndicator
+                  size="small"
+                  color="#00ff00"
+                  animating={
+                    props.statusColor === "red"
+                      ? props.IPAddress === ""
+                        ? false
+                        : true
+                      : false
+                  }
                 />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Bar
-                  progress={parseFloat(state.bBarEcho)}
-                  width={null}
-                  height={32}
-                  color={state.progressColor}
-                  borderWidth={0}
-                  borderRadius={0}
-                />
+              </>
+            )}
+            <View style={{ flexDirection: "row", flex: 1 }}>
+              {!isLandscape && (
+                <View style={styles.droLeftBox}>
+                  <Text adjustsFontSizeToFit={true} style={styles.droText}>DX:</Text>
+                  <Text adjustsFontSizeToFit={true} style={styles.droText}>DY:</Text>
+                  <Text adjustsFontSizeToFit={true} style={styles.droText}>DZ:</Text>
+                  <Text adjustsFontSizeToFit={true} style={styles.droText}>3D:</Text>
+                </View>
+              )}
+              <View style={[styles.droRightBox, dynamicStyles.droRightBox]}>
+                {!isLandscape ? (
+                  <>
+                    <Text numberOfLines={1} style={[styles.droValue, { color: state.xdColor }]}>{state.xdEcho}</Text>
+                    <Text numberOfLines={1} style={[styles.droValue, { color: state.ydColor }]}>{state.ydEcho}</Text>
+                    <Text numberOfLines={1} style={[styles.droValue, { color: state.zdColor }]}>{state.zdEcho}</Text>
+                    <Text numberOfLines={1} style={[styles.droValue, { color: state.ootEcho }]}>{state.d3Echo}</Text>
+                  </>
+                ) : (
+                  <View style={dynamicStyles.landscapeContainer}>
+                    <Text numberOfLines={1} adjustsFontSizeToFit={true} style={dynamicStyles.d3Text}>{state.d3Echo}</Text>
+                  </View>
+                )}
               </View>
             </View>
-          </View>
-        </View>
-        <ActivityIndicator
-          size="small"
-          color="#00ff00"
-          animating={
-            props.statusColor === "red"
-              ? props.IPAddress === ""
-                ? false
-                : true
-              : false
-          }
+          </React.Fragment>
+        </TouchableHighlight>
+      </View>
+      {!isLandscape && (
+        <CustomStatusBar
+          IPAddress={props.IPAddress}
+          statusColor={props.statusColor}
         />
-        <View
-          style={{
-            flexDirection: "row",
-            flex: 1,
-            alignItems: state.isLandscape ? "center" : null,
-            justifyContent: state.isLandscape ? "center" : null,
-          }}
-        >
-          {!state.isLandscape && (
-            <View style={styles.droLeftBox}>
-              <Text adjustsFontSizeToFit={true} style={[styles.droText]}>
-                DX:
-              </Text>
-              <Text adjustsFontSizeToFit={true} style={[styles.droText]}>
-                DY:
-              </Text>
-              <Text adjustsFontSizeToFit={true} style={[styles.droText]}>
-                DZ:
-              </Text>
-              <Text
-                adjustsFontSizeToFit={true}
-                style={{
-                  color: EStyleSheet.value("$textColor"),
-                  fontSize: RFValue(60),
-                  justifyContent: "space-around",
-                }}
-              >
-                3D:
-              </Text>
-            </View>
-          )}
-          <View
-            style={[
-              styles.droRightBox,
-              {
-                justifyContent: state.isLandscape ? "center" : "space-around",
-                alignItems: state.isLandscape ? "center" : "flex-end",
-              },
-            ]}
-          >
-            <Text
-              numberOfLines={1}
-              style={{
-                fontVariant: ["tabular-nums"],
-                fontSize: RFValue(60),
-                color: state.xdColor,
-              }}
-            >
-              {state.xdEcho}
-            </Text>
-
-            {!state.isLandscape && (
-              <Text
-                numberOfLines={1}
-                style={{
-                  fontVariant: ["tabular-nums"],
-                  fontSize: RFValue(60),
-                  color: state.ydColor,
-                }}
-              >
-                {state.ydEcho}
-              </Text>
-            )}
-
-            {!state.isLandscape && (
-              <Text
-                numberOfLines={1}
-                style={{
-                  fontVariant: ["tabular-nums"],
-                  fontSize: RFValue(60),
-                  color: state.zdColor,
-                }}
-              >
-                {state.zdEcho}
-              </Text>
-            )}
-
-            <Text
-              numberOfLines={1}
-              style={{
-                fontVariant: ["tabular-nums"],
-                fontSize: state.isLandscape ? RFValue(145) : RFValue(60),
-                color: state.ootEcho,
-                textAlign: state.isLandscape ? "center" : null,
-              }}
-            >
-              {state.d3Echo}
-            </Text>
-          </View>
-        </View>
-        {!state.isLandscape && (
-          <View
-            style={{
-              flexDirection: "column",
-              height: 75,
-              alignItems: "center",
-              justifyContent: "space-around",
-              paddingBottom: 2,
-              paddingTop: 6,
-              backgroundColor: EStyleSheet.value("$cardColor"),
-              opacity: 0.8,
-              borderTopWidth: 0,
-              borderRadius: 8,
-            }}
-          >
-            <View
-              style={{
-                borderRadius: 5,
-                width: 10,
-                height: 10,
-                backgroundColor:
-                  props.IPAddress === "" ? "#00ff00" : props.statusColor,
-              }} 
-            ></View>
-            
-            <Text style={styles.footerText}>
-              Connected To:{" "}
-              {props.IPAddress === ""
-                ? "Master3DGage "
-                : `${state.dNameEcho} (${state.dInfoEcho})`}
-            </Text>
-            <Text style={styles.footerText}>
-              Probe Radius:{" "}
-              {props.IPAddress === ""
-                ? "3mm | 67.4°F"
-                : `${state.dRadiusEcho}mm | Temperature: ${state.dTempEcho}°F`}
-            </Text>
-          </View>
-        )}
-      </React.Fragment>
-    </TouchableHighlight>
+      )}
+    </View>
   );
 };
 BuildScreen.navigationOptions = {
@@ -527,7 +548,32 @@ export default connect(mapStateToProps, mapDispatchToProps)(BuildScreen);
 const styles = EStyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "$cardColor",
+    backgroundColor: "$bgColor",
+  },
+  headerContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: RFValue(0),
+    backgroundColor: "yellow",
+  },
+  contentContainer: {
+    flex: 1,
+    // backgroundColor: "purple",
+    marginBottom: 20, // Add some space for the CustomStatusBar
+  },
+  landscapeContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // landscapeContentContainer: {
+  //   flex: 1,
+  //   justifyContent: 'center',
+  //   alignItems: 'center',
+  // },
+  footerTitle: {
+    color: "$textColor",
+    fontSize: RFValue(18),
   },
   instructions: {
     color: "$textColor",
@@ -535,10 +581,13 @@ const styles = EStyleSheet.create({
   paragraph: {
     color: "$textColor",
   },
+  droValue: {
+    fontVariant: ["tabular-nums"],
+    fontSize: RFValue(60),
+  },
   droText: {
     color: "$textColor",
     fontSize: RFValue(60),
-    justifyContent: "space-around",
   },
   droLeftBox: {
     justifyContent: "space-around",
@@ -560,10 +609,5 @@ const styles = EStyleSheet.create({
   footerText: {
     fontSize: RFValue(12),
     color: "$textColor",
-  },
-  footerTitle: {
-    fontSize: RFValue(16),
-    color: "$textColor",
-    paddingBottom: RFValue(7),
   },
 });

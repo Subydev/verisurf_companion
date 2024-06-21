@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, SafeAreaView, Platform } from "react-native";
 import { connect } from "react-redux";
 import EStyleSheet from "react-native-extended-stylesheet";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,30 +22,31 @@ const SettingsSubPage = ({
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-      <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <Ionicons
             name="arrow-back"
             size={24}
-            paddingLeft={20}
             color={EStyleSheet.value("$textColor")}
           />
         </TouchableOpacity>
-        <Text style={styles.title}>{title}</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>{title}</Text>
+        </View>
+        <View style={styles.placeholderButton} />
       </View>
       <View
         style={[
           styles.content,
-          containerWidth && { width: containerWidth }, 
+          containerWidth && { width: containerWidth },
           containerPadding && { padding: containerPadding },
           containercardColor && { backgroundColor: containercardColor },
-
         ]}
       >
         {children}
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -72,31 +73,35 @@ const styles = EStyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "$bgColor",
-    // paddingHorizontal: 10,
-    paddingTop: 40,
+    paddingTop: Platform.OS === 'ios' ? 0 : 40, // Adjust for Android
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 10,
+    height: 44, // Standard height for iOS navigation bar
     marginBottom: 20,
-    position: 'relative',
+  },
+  backButton: {
+    padding: 10, // Increase touch area
+    width: 44, // Set a fixed width
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
   },
   title: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: "medium", // "bold" on iOS, "700" on Android
     color: "$textColor",
-    marginBottom: 20, // Add margin to the title
-
+    textAlign: 'center',
   },
-  backButton: {
-    position: "absolute",
-    left: 10,
+  placeholderButton: {
+    width: 44, // Matches the width of backButton
   },
   content: {
     backgroundColor: "$cardColor",
-        marginTop: 20, // Add margin to the content container
-
     borderRadius: 10,
     padding: 20,
     width: "90%",

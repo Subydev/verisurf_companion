@@ -105,20 +105,28 @@ const MeasureScreen = (props) => {
   };
 
   const onPress = () => {
-    console.log({underlayColor});
-    
     setIsPressed(true);
+    setState(prevState => ({
+      ...prevState,
+      underlayColor: "red"
+    }));
+    console.log({underlayColor})
+    
     if (props.IPAddress !== "" && ws && ws.readyState === WebSocket.OPEN) {
       ws.send(`<measure_set_${props.single_or_average} />`);
       ws.send("<measure_trigger />");
       Vibration.vibrate([0, 10]);
     }
   };
-
   const onPressOut = () => {
-    console.log({underlayColor});
-    console.log("PRESSED OUT");
     setIsPressed(false);
+    setState(prevState => ({
+      ...prevState,
+      underlayColor: EStyleSheet.value("$bgColor")
+    }));
+    console.log({underlayColor})
+
+    
     if (
       state.longPressed === 1 &&
       props.IPAddress !== "" &&
@@ -132,13 +140,12 @@ const MeasureScreen = (props) => {
         longPressed: 0,
       }));
     }
-    console.log({underlayColor});
-
   };
 
   const onLongPress = () => {
     setIsPressed(true);
     console.log(":LONG PRESSED");
+    
     if (props.IPAddress !== "" && ws && ws.readyState === WebSocket.OPEN) {
       console.log(
         "Sending measure_set_cloud & measure_trigger from long press"
@@ -261,40 +268,40 @@ const MeasureScreen = (props) => {
     scaler,
   } = state;
 
-  return (
-    <View style={styles.container}>
-      <View
-        style={[
-          styles.contentContainer,
-          { paddingTop: insets.top, paddingBottom: insets.bottom + 80 },
-        ]}
-      >
-        <View style={styles.headerContainer}>
-          <Text style={styles.footerTitle}>
-            Tap - Single | Hold - Continuous
-          </Text>
-        </View>
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={meastype}
-            itemStyle={styles.pickerItem}
-            style={styles.pickerStyle}
-            onValueChange={onPickerValueChange}
-          >
-            <Picker.Item label={"Select Feature Type..."} value={"none"} />
-            <Picker.Item label={"Point"} value={"point"} />
-            <Picker.Item label={"Line"} value={"line"} />
-            <Picker.Item label={"Circle"} value={"circle"} />
-            <Picker.Item label={"Spline"} value={"spline"} />
-            <Picker.Item label={"Ellipse"} value={"ellipse"} />
-            <Picker.Item label={"Slot"} value={"slot"} />
-            <Picker.Item label={"Plane"} value={"plane"} />
-            <Picker.Item label={"Sphere"} value={"sphere"} />
-            <Picker.Item label={"Cylinder"} value={"cylinder"} />
-            <Picker.Item label={"Cone"} value={"cone"} />
-          </Picker>
-        </View>
-        <View style={styles.container}>
+return (
+  <View style={styles.container}>
+    <View
+      style={[
+        styles.contentContainer,
+        { paddingTop: insets.top, paddingBottom: insets.bottom + 80 },
+      ]}
+    >
+      <View style={styles.headerContainer}>
+        <Text style={styles.footerTitle}>
+          Tap - Single | Hold - Continuous
+        </Text>
+      </View>
+      <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={meastype}
+          itemStyle={styles.pickerItem}
+          style={styles.pickerStyle}
+          onValueChange={onPickerValueChange}
+        >
+          <Picker.Item label={"Select Feature Type..."} value={"none"} />
+          <Picker.Item label={"Point"} value={"point"} />
+          <Picker.Item label={"Line"} value={"line"} />
+          <Picker.Item label={"Circle"} value={"circle"} />
+          <Picker.Item label={"Spline"} value={"spline"} />
+          <Picker.Item label={"Ellipse"} value={"ellipse"} />
+          <Picker.Item label={"Slot"} value={"slot"} />
+          <Picker.Item label={"Plane"} value={"plane"} />
+          <Picker.Item label={"Sphere"} value={"sphere"} />
+          <Picker.Item label={"Cylinder"} value={"cylinder"} />
+          <Picker.Item label={"Cone"} value={"cone"} />
+        </Picker>
+      </View>
+      <View style={styles.container}>
         <TouchableHighlight
           style={[
             styles.coordinatesContainer,
@@ -307,57 +314,55 @@ const MeasureScreen = (props) => {
           activeOpacity={1}
           underlayColor={isPressed ? "red" : EStyleSheet.value("$bgColor")}
         >
-            <View style={styles.coordinatesContent}>
-              <View style={styles.droLeftBox}>
-                <Text adjustsFontSizeToFit={true} style={styles.droText}>
-                  X:
-                </Text>
-                <Text adjustsFontSizeToFit={true} style={styles.droText}>
-                  Y:
-                </Text>
-                <Text adjustsFontSizeToFit={true} style={styles.droText}>
-                  Z:
-                </Text>
-              </View>
-              <View style={styles.droRightBox}>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.coordinateValue,
-                    { fontSize: RFValue(59) * scaler },
-                  ]}
-                >
-                  {props.IPAddress === "" ? "188.7101" : xEcho}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.coordinateValue,
-                    { fontSize: RFValue(59) * scaler },
-                  ]}
-                >
-                  {props.IPAddress === "" ? "32.1902" : yEcho}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.coordinateValue,
-                    { fontSize: RFValue(59) * scaler },
-                  ]}
-                >
-                  {props.IPAddress === "" ? "-4.0199" : zEcho}
-                </Text>
-              </View>
+          <View style={styles.coordinatesContent}>
+            <View style={styles.droLeftBox}>
+              <Text style={styles.droText}>X:</Text>
+              <Text style={styles.droText}>Y:</Text>
+              <Text style={styles.droText}>Z:</Text>
             </View>
-          </TouchableHighlight>
-        </View>
+            <View style={styles.droRightBox}>
+              <Text
+                adjustsFontSizeToFit={true}
+                numberOfLines={1}
+                style={[
+                  styles.coordinateValue,
+                  { fontSize: RFValue(59) * scaler },
+                ]}
+              >
+                {props.IPAddress === "" ? "18.7101" : xEcho}
+              </Text>
+              <Text
+                adjustsFontSizeToFit={true}
+                numberOfLines={1}
+                style={[
+                  styles.coordinateValue,
+                  { fontSize: RFValue(59) * scaler },
+                ]}
+              >
+                {props.IPAddress === "" ? "32.1902" : yEcho}
+              </Text>
+              <Text
+                adjustsFontSizeToFit={true}
+                numberOfLines={1}
+                style={[
+                  styles.coordinateValue,
+                  { fontSize: RFValue(59) * scaler },
+                ]}
+              >
+                {props.IPAddress === "" ? "-4.0199" : zEcho}
+              </Text>
+            </View>
+          </View>
+        </TouchableHighlight>
       </View>
-      <CustomStatusBar
-        IPAddress={props.IPAddress}
-        statusColor={props.statusColor}
-      />
     </View>
-  );
+    <CustomStatusBar
+      IPAddress={props.IPAddress}
+      statusColor={props.statusColor}
+    />
+  </View>
+);
+
 };
 
 MeasureScreen.navigationOptions = {
@@ -406,7 +411,7 @@ const styles = EStyleSheet.create({
   },
   coordinatesContainer: {
     flex: 1,
-    marginTop: Platform.OS === "ios" ?  RFValue(-10) : RFValue(-10),
+    marginTop: Platform.OS === "ios" ?  RFValue(-6) : RFValue(-10),
     backgroundColor: "$bgColor",
 
   },
@@ -424,6 +429,8 @@ const styles = EStyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: RFValue(19),
+    // backgroundColor:"yellow",
+
   },
   pickerContainer: {
     marginBottom: Platform.OS === "ios" ? RFValue(-100) : RFValue(10),
@@ -460,8 +467,9 @@ const styles = EStyleSheet.create({
     color: "$textColor",
   },
   footerTitle: {
-    fontSize: RFValue(16),
     color: "$textColor",
+    fontSize: RFValue(18),
+
   },
   touchableContainer: {
     flex: 1,

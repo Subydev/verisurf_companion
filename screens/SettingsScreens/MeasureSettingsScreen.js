@@ -17,6 +17,9 @@ import {
   Modal,
   Alert,
   TouchableHighlight,
+  KeyboardAvoidingView,
+  TextInput,
+
   Platform,
 } from "react-native";
 import {
@@ -129,21 +132,27 @@ const MeasureSettingsScreen = (props) => {
           <Text style={styles.text} numberOfLines={1} ellipsizeMode={"tail"}>
             Build Tolerance
           </Text>
-          <Input
-      ref={inputRef}
-      clearButtonMode={"while-editing"}
-      textAlign={"center"}
-      inputContainerStyle={styles.inputContainer}
-      inputStyle={styles.inputText}
-      labelStyle={styles.text}
-      containerStyle={styles.inputInnerContainer}
-      Label={"Build Tolerance"}
-      disabled={false}
-      keyboardType="numeric"
-      defaultValue={props.build_tol.toString()}
-      onFocus={textFocused}
-      onEndEditing={(e) => validateAndSubmit(e.nativeEvent.text)}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+          >
+          <TextInput
+              ref={inputRef}
+              clearButtonMode={"while-editing"}
+              textAlign={"center"}
+              style={[styles.inputContainer, styles.inputText]}
+              labelStyle={styles.text}
+              containerStyle={styles.inputInnerContainer}
+              label={"Build Tolerance"}
+              editable={true}
+              keyboardType={Platform.OS === "ios" ? "numeric" : "default"}
+              defaultValue={props.build_tol.toString()}
+              onFocus={textFocused}
+              onEndEditing={(e) => validateAndSubmit(e.nativeEvent.text)}
+              returnKeyType={Platform.OS === "ios" ? "done" : undefined}
     />
+              </KeyboardAvoidingView>
+
         </View>
       </View>
       <TolModal

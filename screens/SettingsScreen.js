@@ -6,7 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
-
+Platform,
+SafeAreaView,
 } from "react-native";
 import {
   SocialIcon,
@@ -14,7 +15,7 @@ import {
   Icon,
 } from "react-native-elements";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { connect } from "react-redux";
+import { connect, useSelector, useDispatch  } from "react-redux";
 import EStyleSheet from "react-native-extended-stylesheet";
 import { RFPercentage, RFValue } from "react-native-responsive-fontsize";
 import { Dimensions } from "react-native";
@@ -35,8 +36,9 @@ const AppearanceList = [
     { title: "Auto-Inspect Settings", icon: "play-outline" },
   ];
   
-  const DeviceSettingsList = [
+  const DeviceAndMeasureSettingsList = [
     { title: "Device Settings", icon: "hardware-chip-outline" },
+    { title: "Measure Settings", icon: "resize-outline" },
   ];
 
   const ContactUsSettingsList = [
@@ -55,7 +57,9 @@ const SettingsScreen = (props) => {
   const [ootPosCol, setOotPosCol] = useState("");
   const [ootNegCol, setOotNegCol] = useState("");
   const [opacityLevel, setOpacityLevel] = useState(1);
+  const notificationCount = useSelector(state => state.count);
 
+  const dispatch = useDispatch();
   const myRef = useRef(null);
   const inputter = useRef(null);
   const inTolText = useRef(null);
@@ -104,9 +108,8 @@ const SettingsScreen = (props) => {
         containerStyle={[
           styles.listItemContainer,
           i === 0 ? { borderTopLeftRadius: 10, borderTopRightRadius: 10 } : {},
-          i === list.length - 1
-            ? { borderBottomLeftRadius: 10, borderBottomRightRadius: 10 }
-            : {},
+          i === list.length - 1 ? { borderBottomLeftRadius: 10, borderBottomRightRadius: 10 } : {},
+          i !== list.length - 1 ? { borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.1)' } : {},
         ]}
         onPress={() => {
           const { navigate } = props.navigation;
@@ -117,6 +120,7 @@ const SettingsScreen = (props) => {
               break;
             case "Notifications":
               navigate("NotificationSettingsScreen");
+              dispatch({ type: 'CLEAR_NOTIFICATIONS' });
               break;
             case "Report Settings":
               navigate("ReportSettingsScreen");
@@ -127,7 +131,7 @@ const SettingsScreen = (props) => {
             case "Auto-Inspect Settings":
               navigate("AutoInspectSettingsScreen");
               break;
-            case "Contact us":
+            case "Contact Us":
               navigate("ContactusSettingsScreen");
               break;
             case "Measure Settings":
@@ -139,21 +143,28 @@ const SettingsScreen = (props) => {
         }}
         underlayColor="#444"
       >
-    <Ionicons name={item.icon} size={24} color="white" />
+     <Ionicons name={item.icon} size={24} color="white" />
         <ListItem.Content>
           <ListItem.Title style={{ color: "white" }}>
             {item.title}
           </ListItem.Title>
         </ListItem.Content>
+        {item.title === "Notifications" && notificationCount > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{notificationCount}</Text>
+          </View>
+        )}
         <ListItem.Chevron />
       </ListItem>
     ));
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#000" }}>
+<SafeAreaView style={{ flex: 1, backgroundColor: EStyleSheet.value("$bgColor") }}>
       <ScrollView
         style={[styles.scrollContainer, { opacity: opacityLevel }]}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }} // Add this line
+
         ref={myRef}
       >
         <View style={styles.content}>
@@ -178,13 +189,10 @@ const SettingsScreen = (props) => {
             <Text style={styles.sectionTitleList}>Apps</Text>
             {renderList(NotificationSettingsList)}
           </View>
-
           <View style={styles.sectionList}>
-            <Text style={styles.sectionTitleList}>Devices</Text>
-            {renderList(DeviceSettingsList)}
-            {renderList(MeasureSettingsList)}
-            
-          </View>
+  <Text style={styles.sectionTitleList}>Devices</Text>
+  {renderList(DeviceAndMeasureSettingsList)}
+</View>
           <View style={styles.sectionList}>
             <Text style={styles.sectionTitleList}>Reports</Text>
             {renderList(ReportSettingsList)}
@@ -250,28 +258,30 @@ const SettingsScreen = (props) => {
           />
         </View>
 
-        <View>
-          <SocialIcon
-            button
-            title="Powered by the Verisurf API"
-            raised={false}
-            padding={10}
-            underlayColor="#333"
-            style={{ backgroundColor: "rgb(39,39,39)" }}
-            type="github"
-            onPress={() =>
-              Linking.openURL("https://github.com/verisurf/verisurf-api")
-            }
-          />
-        </View>
+        <View style={styles.footerContainer}>
+          <View style={styles.poweredByContainer}>
+            <SocialIcon
+              button
+              title="Powered by the Verisurf API"
+              raised={false}
+              padding={10}
+              underlayColor="#333"
+              style={styles.poweredByButton}
+              type="github"
+              onPress={() =>
+                Linking.openURL("https://github.com/verisurf/verisurf-api")
+              }
+            />
+          </View>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
             Version {AppData["expo"]["version"]}
           </Text>
         </View>
+        </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -312,6 +322,20 @@ export default connect(mapStateToProps, mapDispatchToProps)(SettingsScreen);
     // backgroundColor: '#000',
     padding: 10,
   },
+  badge: {
+    backgroundColor: 'red',
+    borderRadius: 9,
+    width: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
   sectionList: {
     paddingBottom: RFPercentage(5),
   },
@@ -322,14 +346,12 @@ export default connect(mapStateToProps, mapDispatchToProps)(SettingsScreen);
     paddingLeft: 5,
     paddingBottom: 10,
   },
-  listItemContainer: {
-    overflow: "hidden",
-    backgroundColor: "#333333",
-    paddingBottom: 20,
-    flex: 1,
-    backgroundColor: "#000",
-    padding: 10,
+  poweredByButton: {
+    backgroundColor: "rgb(39,39,39)",
+    width: '90%', // Adjust this value as needed
+    justifyContent: 'center',
   },
+
   section: {
     paddingBottom: RFPercentage(5),
   },
@@ -343,9 +365,10 @@ export default connect(mapStateToProps, mapDispatchToProps)(SettingsScreen);
   listItemContainer: {
     overflow: "hidden",
     backgroundColor: "#333333",
-    paddingBottom: 20,
+    paddingVertical: 15, // Adjust this value as needed
   },
   pickerContainer: {
+    
     borderWidth: 1,
     borderRadius: 10,
     borderColor: "white",
@@ -366,6 +389,7 @@ export default connect(mapStateToProps, mapDispatchToProps)(SettingsScreen);
   container: {
     marginBottom: RFValue(10),
     shadowColor: "$cardColor",
+
     shadowOffset: {
       width: 0,
       height: 1,
@@ -446,9 +470,18 @@ export default connect(mapStateToProps, mapDispatchToProps)(SettingsScreen);
     color: "$textColor",
     alignSelf: "center",
   },
-  footer: {},
+  footerContainer: {
+    marginTop: 20,
+    paddingBottom: 20,
+  },
+  poweredByContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  footer: {
+    alignItems: 'center',
+  },
   footerText: {
-    alignSelf: "center",
     color: "$textColor",
     fontSize: RFValue(15),
     opacity: 0.5,

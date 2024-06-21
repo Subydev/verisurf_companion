@@ -8,6 +8,8 @@ import {
   Keyboard,
   Alert,
   Dimensions,
+  SafeAreaView,
+  Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
@@ -18,6 +20,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Input } from "react-native-elements";
 import { connect } from "react-redux";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import reportData from "../constants/reportData.json";
 
 var SECTIONS = [];
@@ -45,6 +48,7 @@ const ReportsScreen = (props) => {
   const currentPlan = useRef(undefined);
   const _isMounted = useRef(false);
   const ws = useRef(null);
+  const insets = useSafeAreaInsets();
 
   useFocusEffect(
     useCallback(() => {
@@ -278,6 +282,7 @@ const ReportsScreen = (props) => {
     }).start();
 
     return (
+      
       <View
         style={[
           styles.header,
@@ -467,13 +472,14 @@ const ReportsScreen = (props) => {
   };
 
   return (
-    <View style={{ backgroundColor: EStyleSheet.value("$bgColor"), flex: 1 }}>
+    // <View style={{ backgroundColor: EStyleSheet.value("$bgColor"), flex: 1 }}>
+    <SafeAreaView style={styles.container}>
+
       <View
-        style={{
-          backgroundColor: EStyleSheet.value("$bgColor"),
-          paddingBottom: RFValue(10),
-        }}
-      >
+       style={[
+        styles.contentContainer,
+        { paddingTop: insets.top, },
+      ]}>
         <Input
           ref={searchForm}
           inputStyle={styles.searchForm}
@@ -502,7 +508,10 @@ const ReportsScreen = (props) => {
         key={props.dark_mode}
         style={{
           margin: 0,
-          backgroundColor: EStyleSheet.value("$cardColor"),
+          // backgroundColor: "pink",
+          // backgroundColor: EStyleSheet.value("$cardColor"),
+    marginBottom: Platform.OS === "ios" ? RFValue(-100) : RFValue(10),
+
           borderWidth: 1,
           borderRadius: 5,
           borderBottomWidth: 1,
@@ -516,8 +525,12 @@ const ReportsScreen = (props) => {
           style={{
             color: EStyleSheet.value("$textColor"),
             borderWidth: 0,
-            height: RFValue(50),
-            backgroundColor: "$bgColor",
+            // height: RFValue(50),
+             height: Platform.OS === "ios" ? RFValue(180) : RFValue(50),
+
+            // backgroundColor: "$bgColor",
+            // backgroundColor: "green",
+
           }}
           onValueChange={(itemValue) => {
             console.log(itemValue);
@@ -539,6 +552,9 @@ const ReportsScreen = (props) => {
 
       <ScrollView
         style={styles.scrollContainer}
+        contentContainerStyle={{
+          paddingBottom: RFValue(75), // Match the height of the Status Bar
+        }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -563,7 +579,8 @@ const ReportsScreen = (props) => {
         />
       </ScrollView>
 
-      <View
+        {/* Status Bar  */}
+      {/* <View
         style={{
           flexDirection: "column",
           height: 75,
@@ -571,10 +588,16 @@ const ReportsScreen = (props) => {
           justifyContent: "space-around",
           paddingBottom: 2,
           paddingTop: 6,
+          position: "absolute",  // Change from 'relative' to 'absolute'
+          bottom: Platform.OS === "ios" ? RFValue(80) : RFValue(65),  // Position at the bottom
+          left: 0,
+          right: 0,
           backgroundColor: EStyleSheet.value("$cardColor"),
-          opacity: 0.8,
-          borderTopWidth: 0,
-          borderRadius: 8,
+
+          opacity: 1,
+          borderTopLeftRadius: 8,
+          borderTopRightRadius: 8,
+          zIndex: 1000,  // Ensure it's on top of other elements
         }}
       >
         <View
@@ -591,8 +614,8 @@ const ReportsScreen = (props) => {
         <Text style={styles.footerText}>
           Objects in Plan: `{props.IPAddress === "" ? 17 : `${numOfObjects}`}` | Total Plans: {totalPlans}
         </Text>
-      </View>
-    </View>
+      </View> */}
+    </SafeAreaView>
   );
 };
 
@@ -632,11 +655,19 @@ const styles = EStyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "$bgColor",
-    alignContent: "flex-start",
+    marginTop: Platform.OS === "ios" ? RFValue(-50) : RFValue(0)
+    // alignContent: "flex-start",
+  },
+  contentContainer: {
+    // flex: 1,
+    // backgroundColor: "purple",
+    // marginBottom: 20, // Add some space for the CustomStatusBar
   },
   scrollContainer: {
     flex: 1,
+    backgroundColor: "orange",
     backgroundColor: "$bgColor",
+
   },
   accordionContainer: {
     backgroundColor: "$bgColor",
@@ -669,7 +700,9 @@ const styles = EStyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "$cardColor",
+    // backgroundColor: "$cardColor",
+    // backgroundColor: "pink",
+
     borderTopLeftRadius: 5,
     borderTopRightRadius: 5,
     paddingLeft: RFValue(10),
@@ -678,11 +711,14 @@ const styles = EStyleSheet.create({
     paddingBottom: RFValue(5),
   },
   headerFirst: {
+    // backgroundColor: "pink",
     marginTop: RFValue(10),
   },
   headerTextContainer: {
     flex: 1,
     justifyContent: "flex-start",
+    // backgroundColor: "red",
+
   },
   headerText: {
     fontSize: RFValue(16),
@@ -694,17 +730,20 @@ const styles = EStyleSheet.create({
     color: "$textColor",
   },
   searchContainer: {
-    backgroundColor: "$cardColor",
-    borderBottomColor: "$textColor",
+    // backgroundColor: "$cardColor",
+    // borderBottomColor: "$textColor",
     paddingLeft: 10,
     paddingRight: 10,
     borderRadius: 5,
   },
   pickerItem2: {
-    fontSize: RFValue(20),
-    height: RFValue(100),
+    fontSize: RFValue(16),
+    height: RFValue(85),
+    // height: Platform.OS === "ios" ? RFValue(180) : RFValue(50),
     color: "$textColor",
-    backgroundColor: "$bgColor",
+    // backgroundColor: "blue",
+    // backgroundColor: "$bgColor",
+
   },
   footerText: {
     fontSize: RFValue(12),

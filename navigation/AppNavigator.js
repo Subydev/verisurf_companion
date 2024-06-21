@@ -5,6 +5,8 @@ import EStyleSheet from 'react-native-extended-stylesheet';
 import SignInScreen from './SignIn';
 import { createStackNavigator } from '@react-navigation/stack';
 import MainTabNavigator from './MainTabNavigator';
+import * as ScreenOrientation from 'expo-screen-orientation';
+
 
 class AuthLoadingScreen extends React.Component {
   constructor() {
@@ -62,10 +64,20 @@ function AppStack() {
   );
 }
 
+
 export default function AppNavigator() {
   console.log('AppNavigator: Rendering');
+  useEffect(() => {
+    // Lock to portrait by default
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+  }, []);
   return (
-    <Stack.Navigator initialRouteName="AuthLoading" screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      initialRouteName="AuthLoading" 
+      screenOptions={{ 
+        headerShown: false,
+      }}
+    >
       <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
       <Stack.Screen name="App" component={AppStack} />
       <Stack.Screen name="Auth" component={AuthStack} />

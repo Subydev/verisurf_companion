@@ -83,7 +83,7 @@ const styles = EStyleSheet.create({
     margin: RFValue(10),
     marginRight: 0,
     padding: 0,
-    opacity: 0.8,
+    opacity: 1,
   },
 });
 
