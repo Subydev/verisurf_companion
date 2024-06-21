@@ -1,20 +1,35 @@
 import React, { useState, useEffect, useCallback } from "react";
-import Constants from "expo-constants";
-import { ActivityIndicator } from "react-native";
+import {
+  ActivityIndicator,
+  Text,
+  View,
+  TouchableHighlight,
+  Vibration,
+  Alert,
+  Platform,
+  TouchableOpacity,
+} from "react-native";
 import { RFPercentage, RFValue } from "react-native-responsive-fontsize";
 import { useFocusEffect } from "@react-navigation/native";
 import EStyleSheet from "react-native-extended-stylesheet";
 import { connect } from "react-redux";
 import { Picker } from "@react-native-picker/picker";
-import { Text, View, TouchableHighlight, Vibration, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useIsFocused } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTabBarHeight } from "../components/useTabBarHeight";
+import CustomStatusBar from "../components/CustomStatusBar.js";
 
 let error_detector = true;
 
 const MeasureScreen = (props) => {
   const [isMounted, setIsMounted] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
   const [ws, setWs] = useState(null);
+
+  const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
+  const tabBarHeight = useTabBarHeight();
   const [state, setState] = useState({
     notification: {},
     isLoading: true,
@@ -35,14 +50,16 @@ const MeasureScreen = (props) => {
 
   useEffect(() => {
     console.log("Decimal places updated: ", props.decimal_places);
-    // Any additional logic to handle decimal places changes can be placed here
   }, [props.decimal_places]);
 
   useFocusEffect(
     useCallback(() => {
       console.log("MeasureScreen focused");
-      console.log(props.decimal_places)
+    console.log({underlayColor});
+      
+      console.log(props.decimal_places);
       if (props.IPAddress === "") {
+        
         return;
       }
 
@@ -88,26 +105,26 @@ const MeasureScreen = (props) => {
   };
 
   const onPress = () => {
-    setState((prevState) => ({
-      ...prevState,
-      backgroundColor: "red",
-    }));
-    if (props.IPAddress !== "") {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(`<measure_set_${props.single_or_average} />`);
-        ws.send("<measure_trigger />");
-        Vibration.vibrate([0, 10]);
-      }
+    console.log({underlayColor});
+    
+    setIsPressed(true);
+    if (props.IPAddress !== "" && ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(`<measure_set_${props.single_or_average} />`);
+      ws.send("<measure_trigger />");
+      Vibration.vibrate([0, 10]);
     }
   };
 
   const onPressOut = () => {
-    setState((prevState) => ({
-      ...prevState,
-      backgroundColor: EStyleSheet.value("$bgColor"),
-    }));
-
-    if (state.longPressed === 1 && props.IPAddress !== "") {
+    console.log({underlayColor});
+    console.log("PRESSED OUT");
+    setIsPressed(false);
+    if (
+      state.longPressed === 1 &&
+      props.IPAddress !== "" &&
+      ws &&
+      ws.readyState === WebSocket.OPEN
+    ) {
       console.log("Sending measure_trigger from long press out");
       ws.send("<measure_trigger />");
       setState((prevState) => ({
@@ -115,21 +132,25 @@ const MeasureScreen = (props) => {
         longPressed: 0,
       }));
     }
+    console.log({underlayColor});
+
   };
 
   const onLongPress = () => {
-    if (props.IPAddress === "") {
-      return;
+    setIsPressed(true);
+    console.log(":LONG PRESSED");
+    if (props.IPAddress !== "" && ws && ws.readyState === WebSocket.OPEN) {
+      console.log(
+        "Sending measure_set_cloud & measure_trigger from long press"
+      );
+      ws.send("<measure_set_cloud />");
+      ws.send("<measure_trigger />");
+      Vibration.vibrate([0, 50]);
+      setState((prevState) => ({
+        ...prevState,
+        longPressed: 1,
+      }));
     }
-    console.log("Sending measure_set_cloud & measure_trigger from long press");
-    ws.send("<measure_set_cloud />");
-    ws.send("<measure_trigger />");
-    Vibration.vibrate([0, 50]);
-
-    setState((prevState) => ({
-      ...prevState,
-      longPressed: 1,
-    }));
   };
 
   const beginStream = (newWs) => {
@@ -211,27 +232,20 @@ const MeasureScreen = (props) => {
     }
   };
 
-  useEffect(() => {
-    if (Constants.isDevice && props.is_registered === false) {
-      registerForPushNotificationsAsync().then((value) => {
-        props.change_value_only(value, "is_registered");
-      });
-    }
-  }, [props.is_registered]);
-
-  useEffect(() => {
-    if (props.statusColor === "red") {
-      setState((prevState) => ({
-        ...prevState,
-        underlayColor: EStyleSheet.value("$bgColor"),
-      }));
-    } else if (props.statusColor !== "red" && state.meastype !== "none") {
-      setState((prevState) => ({
-        ...prevState,
-        underlayColor: "red",
-      }));
-    }
-  }, [props.statusColor, state.meastype]);
+  // useEffect(() => {
+    
+  //   if (props.statusColor === "red") {
+  //     setState((prevState) => ({
+  //       ...prevState,
+  //       underlayColor: EStyleSheet.value("$bgColor"),
+  //     }));
+  //   } else if (props.statusColor !== "red" && state.meastype !== "none") {
+  //     setState((prevState) => ({
+  //       ...prevState,
+  //       underlayColor: "red",
+  //     }));
+  //   }
+  // }, [props.statusColor, state.meastype]);
 
   const {
     xEcho,
@@ -248,40 +262,19 @@ const MeasureScreen = (props) => {
   } = state;
 
   return (
-    <TouchableHighlight
-      underlayColor={underlayColor}
-      onPress={onPress}
-      onPressOut={onPressOut}
-      onLongPress={onLongPress}
-      delayLongPress={500}
-      style={[
-        styles.container,
-        { backgroundColor: EStyleSheet.value("$bgColor") },
-      ]}
-    >
-      <React.Fragment>
-        <View
-          style={{
-            flexDirection: "column",
-            borderColor: EStyleSheet.value("$textColor"),
-            borderWidth: 0,
-            alignItems: "center",
-            justifyContent: "space-around",
-            paddingTop: 50,
-          }}
-        >
+    <View style={styles.container}>
+      <View
+        style={[
+          styles.contentContainer,
+          { paddingTop: insets.top, paddingBottom: insets.bottom + 80 },
+        ]}
+      >
+        <View style={styles.headerContainer}>
           <Text style={styles.footerTitle}>
             Tap - Single | Hold - Continuous
           </Text>
-          <ActivityIndicator
-            size="small"
-            color="#00ff00"
-            animating={
-              props.statusColor === "red" ? props.IPAddress !== "" : false
-            }
-          />
         </View>
-        <View style={{}} key={props.dark_mode}>
+        <View style={styles.pickerContainer}>
           <Picker
             selectedValue={meastype}
             itemStyle={styles.pickerItem}
@@ -301,94 +294,69 @@ const MeasureScreen = (props) => {
             <Picker.Item label={"Cone"} value={"cone"} />
           </Picker>
         </View>
-        <View style={{ flexDirection: "row", flex: 1 , marginTop: RFValue(-20)}}>
-          <View style={styles.droLeftBox}>
-            <Text adjustsFontSizeToFit={true} style={styles.droText}>
-              X:
-            </Text>
-            <Text adjustsFontSizeToFit={true} style={styles.droText}>
-              Y:
-            </Text>
-            <Text adjustsFontSizeToFit={true} style={styles.droText}>
-              Z:
-            </Text>
-          </View>
-          <View style={styles.droRightBox}>
-            <Text
-              numberOfLines={1}
-              style={{
-                fontVariant: ["tabular-nums"],
-                opacity: 1,
-                fontSize: RFValue(59) * scaler,
-                color: EStyleSheet.value("$textColor"),
-              }}
-            >
-              {props.IPAddress === "" ? "188.7101" : xEcho}
-            </Text>
-            <Text
-              numberOfLines={1}
-              adjustsFontSizeToFit={true}
-              style={{
-                fontVariant: ["tabular-nums"],
-                opacity: 1,
-                fontSize: RFValue(59) * scaler,
-                color: EStyleSheet.value("$textColor"),
-              }}
-            >
-              {props.IPAddress === "" ? "32.1902" : yEcho}
-            </Text>
-            <Text
-              numberOfLines={1}
-              style={{
-                fontVariant: ["tabular-nums"],
-                opacity: 1,
-                fontSize: RFValue(59) * scaler,
-                color: EStyleSheet.value("$textColor"),
-              }}
-            >
-              {props.IPAddress === "" ? "-4.0199" : zEcho}
-            </Text>
-          </View>
-        </View>
-
-        <View
-          style={{
-            flexDirection: "column",
-            height: 75,
-            alignItems: "center",
-            justifyContent: "space-around",
-            paddingBottom: 2,
-            paddingTop: 6,
-            backgroundColor: EStyleSheet.value("$cardColor"),
-            opacity: 0.8,
-            borderTopWidth: 0,
-            borderRadius: 8,
-          }}
+        <View style={styles.container}>
+        <TouchableHighlight
+          style={[
+            styles.coordinatesContainer,
+            isPressed && styles.coordinatesContainerPressed,
+          ]}
+          onPress={onPress}
+          onPressOut={onPressOut}
+          onLongPress={onLongPress}
+          delayLongPress={500}
+          activeOpacity={1}
+          underlayColor={isPressed ? "red" : EStyleSheet.value("$bgColor")}
         >
-          <View
-            style={{
-              borderRadius: 5,
-              width: 10,
-              height: 10,
-              backgroundColor:
-                props.IPAddress === "" ? "#00ff00" : props.statusColor,
-            }}
-          ></View>
-          <Text style={styles.footerText}>
-            Connected To:{" "}
-            {props.IPAddress === ""
-              ? "Master3DGage "
-              : `${dNameEcho} (${dInfoEcho})`}
-          </Text>
-          <Text style={styles.footerText}>
-            Probe Radius:{" "}
-            {props.IPAddress === ""
-              ? "3mm | 67.4°F"
-              : `${dRadiusEcho}mm | Temperature: ${dTempEcho}°F`}
-          </Text>
+            <View style={styles.coordinatesContent}>
+              <View style={styles.droLeftBox}>
+                <Text adjustsFontSizeToFit={true} style={styles.droText}>
+                  X:
+                </Text>
+                <Text adjustsFontSizeToFit={true} style={styles.droText}>
+                  Y:
+                </Text>
+                <Text adjustsFontSizeToFit={true} style={styles.droText}>
+                  Z:
+                </Text>
+              </View>
+              <View style={styles.droRightBox}>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.coordinateValue,
+                    { fontSize: RFValue(59) * scaler },
+                  ]}
+                >
+                  {props.IPAddress === "" ? "188.7101" : xEcho}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.coordinateValue,
+                    { fontSize: RFValue(59) * scaler },
+                  ]}
+                >
+                  {props.IPAddress === "" ? "32.1902" : yEcho}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.coordinateValue,
+                    { fontSize: RFValue(59) * scaler },
+                  ]}
+                >
+                  {props.IPAddress === "" ? "-4.0199" : zEcho}
+                </Text>
+              </View>
+            </View>
+          </TouchableHighlight>
         </View>
-      </React.Fragment>
-    </TouchableHighlight>
+      </View>
+      <CustomStatusBar
+        IPAddress={props.IPAddress}
+        statusColor={props.statusColor}
+      />
+    </View>
   );
 };
 
@@ -396,57 +364,80 @@ MeasureScreen.navigationOptions = {
   header: null,
 };
 
-function mapStateToProps(state) {
-  return {
-    dark_mode: state.dark_mode,
-    decimal_places: state.decimal_places,
-    response_time: state.response_time,
-    device_number: state.device_number,
-    IPAddress: state.IPAddress,
-    port: state.port,
-    statusColor: state.statusColor,
-    single_or_average: state.single_or_average,
-    is_registered: state.is_registered,
-  };
-}
+const mapStateToProps = (state) => ({
+  dark_mode: state.dark_mode,
+  decimal_places: state.decimal_places,
+  response_time: state.response_time,
+  device_number: state.device_number,
+  IPAddress: state.IPAddress,
+  port: state.port,
+  statusColor: state.statusColor,
+  single_or_average: state.single_or_average,
+  is_registered: state.is_registered,
+});
 
-function mapDispatchToProps(dispatch) {
-  return {
-    change_value_only: (value, name) =>
-      dispatch({ type: "CHANGE_VALUE", value, name }),
-  };
-}
+const mapDispatchToProps = (dispatch) => ({
+  change_value_only: (value, name) =>
+    dispatch({ type: "CHANGE_VALUE", value, name }),
+});
+
 export default connect(mapStateToProps, mapDispatchToProps)(MeasureScreen);
 
 const styles = EStyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "$bgColor",
   },
+  contentContainer: {
+    flex: 1,
+    // backgroundColor: "purple",
+    marginBottom: 20, // Add some space for the CustomStatusBar
+  },
+
   text: {
     color: "$textColor",
   },
   pickerItem: {
     color: "$textColor",
-    // height: 120,
-    // fontSize: 32,
-    fontSize: RFValue(20),  // Adjust this value as needed
-    height: RFValue(100),  // Adjust this value as needed
-    alignContent: "center",
-    flexDirection: "column",
+    fontSize: RFValue(16),
+    height: RFValue(85),
+    // backgroundColor: "orange",
+    
+  },
+  coordinatesContainer: {
+    flex: 1,
+    marginTop: Platform.OS === "ios" ?  RFValue(-10) : RFValue(-10),
+    backgroundColor: "$bgColor",
+
+  },
+
+  coordinatesContent: {
+    flexDirection: "row",
+    flex: 1,
   },
   pickerStyle: {
     color: "$textColor",
     borderColor: "$textColor",
-    borderWidth: 1,
-    borderRadius: 50,
-    fontSize: RFValue(20),  // Adjust this value as needed
-    // height: RFValue(100),  // Adjust this value as needed
-    borderBottomWidth: 1,
+    height: Platform.OS === "ios" ? RFValue(180) : RFValue(50),
+  },
+  headerContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: RFValue(19),
+  },
+  pickerContainer: {
+    marginBottom: Platform.OS === "ios" ? RFValue(-100) : RFValue(10),
+    // backgroundColor: "purple",
+  },
+
+  coordinateValue: {
+    fontVariant: ["tabular-nums"],
+    opacity: 1,
+    color: "$textColor",
   },
   droText: {
     color: "$textColor",
-    fontSize: RFValue(58),
-    justifyContent: "space-around",
+    fontSize: RFValue(60),
     opacity: 1,
   },
   droLeftBox: {
@@ -454,20 +445,15 @@ const styles = EStyleSheet.create({
     flexDirection: "column",
     width: 109,
     alignItems: "flex-start",
-    borderWidth: 0,
-    borderColor: "$textColor",
-    paddingTop: 20,
     paddingLeft: 5,
   },
   droRightBox: {
     flex: 1,
     justifyContent: "space-around",
     flexDirection: "column",
-    borderWidth: 0,
-    borderColor: "$textColor",
     alignItems: "flex-end",
+    fontSize: RFValue(60),
     paddingRight: 5,
-    paddingTop: 20,
   },
   footerText: {
     fontSize: RFValue(12),
@@ -476,6 +462,13 @@ const styles = EStyleSheet.create({
   footerTitle: {
     fontSize: RFValue(16),
     color: "$textColor",
-    paddingBottom: RFValue(7),
+  },
+  touchableContainer: {
+    flex: 1,
+    
+  },
+  statusFooter: {
+    left: 0,
+    right: 0,
   },
 });

@@ -1,6 +1,8 @@
 import "react-native-gesture-handler";
 import React, { useEffect, useState, useCallback, useRef, createContext } from "react";
-import { Platform, StatusBar, View, SafeAreaView } from "react-native";
+import { Platform, StatusBar, View } from "react-native";
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import * as SplashScreen from "expo-splash-screen";
@@ -20,6 +22,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import ThemeProvider from "./theme/ThemeProvider";
 import dark from "./theme/dark";
 import light from "./theme/light";
+import MainTabNavigator from "./navigation/MainTabNavigator";
 
 
 export const NotificationContext = createContext();
@@ -189,21 +192,21 @@ export default function App(props) {
   }
   console.log("App.js: Rendering app");
   return (
-    <SafeAreaView style={styles.container}>
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <ThemeProvider />
-        <NotificationContext.Provider value={{ expoPushToken, notification, sendPushNotification }}>
-          <SafeAreaView style={styles.container} onLayout={onLayoutRootView}>
-            {Platform.OS === "ios" && <StatusBar barStyle="default" />}
-            <NavigationContainer>
-              <AppNavigator />
-            </NavigationContainer>
-          </SafeAreaView>
-        </NotificationContext.Provider>
-      </PersistGate>
-    </Provider>
-    </SafeAreaView>
+    <SafeAreaProvider>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <ThemeProvider />
+          <NotificationContext.Provider value={{ expoPushToken, notification, sendPushNotification }}>
+            <View style={styles.container} onLayout={onLayoutRootView}>
+              {Platform.OS === "ios" && <StatusBar barStyle="default" />}
+              <NavigationContainer>
+                <MainTabNavigator />
+              </NavigationContainer>
+            </View>
+          </NotificationContext.Provider>
+        </PersistGate>
+      </Provider>
+    </SafeAreaProvider>
 
   );
 }
@@ -233,6 +236,10 @@ async function loadResourcesAsync() {
 const styles = EStyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "$bgColor",
+    backgroundColor: "black",
+  },
+  innerContainer: {
+    flex: 1,
+    backgroundColor: '$bgColor',
   },
 });

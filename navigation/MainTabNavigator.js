@@ -6,20 +6,22 @@ import TabBarIcon from '../components/TabBarIcon';
 import BuildScreen from '../screens/BuildScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import ReportsScreen from '../screens/ReportsScreen';
-import MeasureScreen from '../screens/MeasureScreen';
+import MeasureScreen from "../screens/MeasureScreen";
 import AutoScreen from '../screens/AutoScreen';
 import Scanner from '../screens/Scanner';
 import Colors from '../constants/Colors';
 import DetailScreen from '../screens/SettingsScreens/DetailScreen'; // Import DetailScreen
 import AppearanceSettingsScreen from '../screens/SettingsScreens/AppearanceSettingsScreen';
 import DeviceSettingsScreen from '../screens/SettingsScreens/DeviceSettingsScreen';
-import MeasureSettingsScreen from '../screens/SettingsScreens/MeasureSettingsScreen';
+import MeasureSettingsScreen from "../screens/SettingsScreens/MeasureSettingsScreen";
 import ReportSettingsScreen from '../screens/SettingsScreens/ReportSettingsScreen';
 import AutoInspectSettingsScreen from '../screens/SettingsScreens/AutoInspectSettingsScreen';
 import NotificationSettingsScreen from '../screens/SettingsScreens/NotificationSettingsScreen';
 import ContactusSettingsScreen from '../screens/SettingsScreens/ContactusSettingsScreen';
 import { NavigationContainer } from '@react-navigation/native'
-
+import { BlurView } from 'expo-blur';
+import CustomTabBar from '../components/CustomTabBar';
+import { useTabBarHeight } from '../components/useTabBarHeight';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator ();
@@ -83,67 +85,22 @@ function ReportsStackScreen() {
   );
 }
 
-export default function MainTabNavigator() {
-  console.log('MainTabNavigator: Rendering');
+function MainTabNavigator() {
+  const tabBarHeight = useTabBarHeight();
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused }) => {
-          let iconName;
-          switch (route.name) {
-            case 'Measure':
-              iconName = Platform.OS === 'ios' ? 'ios-play-circle' : 'play-circle-outline';
-              break;
-            case 'Reports':
-              iconName = Platform.OS === 'ios' ? 'ios-paper' : 'newspaper-outline';
-              break;
-            case 'Auto':
-              iconName = Platform.OS === 'ios' ? 'ios-play' : 'play-outline';
-              break;
-            case 'Build':
-              iconName = Platform.OS === 'ios' ? 'ios-arrow-down' : 'arrow-down-outline';
-              break;
-            case 'Settings':
-              iconName = Platform.OS === 'ios' ? 'ios-settings' : 'settings-outline';
-              break;
-            default:
-              iconName = 'information-circle-outline';
-          }
-          return <TabBarIcon focused={focused} name={iconName} />;
-        },
-        tabBarActiveTintColor: Colors.tabIconSelected,
-        tabBarStyle: {
-          backgroundColor: Colors.tabBar,
-        },
-
-        //hide bar/navrbar/.header
-      })}
+    <Tab.Navigator 
+      tabBar={props => <CustomTabBar {...props} height={tabBarHeight} />}
+      screenOptions={{
+        headerShown: false,
+      }}
     >
-      <Tab.Screen
-        name="Measure"
-        component={MeasureStackScreen}
-        options={{ tabBarLabel: 'Measure', headerShown: false }}
-      />
-      <Tab.Screen
-        name="Reports"
-        component={ReportsStackScreen}
-        options={{ tabBarLabel: 'Reports', headerShown: false  }}
-      />
-      <Tab.Screen
-        name="Auto"
-        component={AutoStackScreen}
-        options={{ tabBarLabel: 'Auto-Inspect', headerShown: false  }}
-      />
-      <Tab.Screen
-        name="Build"
-        component={BuildStackScreen}
-        options={{ tabBarLabel: 'Build', headerShown: false }}
-      />
-      <Tab.Screen
-        name="Settings"
-        component={SettingsStackScreen}
-        options={{ tabBarLabel: 'Settings', headerShown: false  }}
-      />
+      <Tab.Screen name="Measure" component={MeasureStackScreen} />
+      <Tab.Screen name="Reports" component={ReportsStackScreen} />
+      <Tab.Screen name="Auto" component={AutoStackScreen} />
+      <Tab.Screen name="Build" component={BuildStackScreen} />
+      <Tab.Screen name="Settings" component={SettingsStackScreen} />
     </Tab.Navigator>
   );
 }
+
+export default MainTabNavigator;
