@@ -58,7 +58,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
           case 'Build':
             iconName = isFocused ? 'arrow-down' : 'arrow-down';
             break;
-          case 'Settings':
+          case 'App':
             iconName = isFocused ? 'settings' : 'settings';
             break;
           default:

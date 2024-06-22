@@ -6,8 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
-Platform,
-SafeAreaView,
+  SafeAreaView,
+  Dimensions,
 } from "react-native";
 import {
   SocialIcon,
@@ -18,10 +18,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { connect, useSelector, useDispatch  } from "react-redux";
 import EStyleSheet from "react-native-extended-stylesheet";
 import { RFPercentage, RFValue } from "react-native-responsive-fontsize";
-import { Dimensions } from "react-native";
 import AppData from "../app.json";
 import { Ionicons } from "@expo/vector-icons";
-
 
 const AppearanceList = [
     { title: "Appearance Options", icon: "color-palette" },
@@ -49,7 +47,6 @@ const AppearanceList = [
     { title: "Notifications", icon: "notifications-outline" },
 
   ];
-  
   
 const SettingsScreen = (props) => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -109,7 +106,6 @@ const SettingsScreen = (props) => {
           styles.listItemContainer,
           i === 0 ? { borderTopLeftRadius: 10, borderTopRightRadius: 10 } : {},
           i === list.length - 1 ? { borderBottomLeftRadius: 10, borderBottomRightRadius: 10 } : {},
-          i !== list.length - 1 ? { borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.1)' } : {},
         ]}
         onPress={() => {
           const { navigate } = props.navigation;
@@ -143,7 +139,7 @@ const SettingsScreen = (props) => {
         }}
         underlayColor="#444"
       >
-     <Ionicons name={item.icon} size={24} color="white" />
+        <Ionicons name={item.icon} size={24} color="white" />
         <ListItem.Content>
           <ListItem.Title style={{ color: "white" }}>
             {item.title}
@@ -160,11 +156,10 @@ const SettingsScreen = (props) => {
   };
 
   return (
-<SafeAreaView style={{ flex: 1, backgroundColor: EStyleSheet.value("$bgColor") }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: EStyleSheet.value("$bgColor") }}>
       <ScrollView
         style={[styles.scrollContainer, { opacity: opacityLevel }]}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }} // Add this line
-
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
         ref={myRef}
       >
         <View style={styles.content}>
@@ -184,25 +179,22 @@ const SettingsScreen = (props) => {
           </View>
         </View>
         <View style={styles.containerList}>
-
-        <View style={styles.sectionList}>
+          <View style={styles.sectionList}>
             <Text style={styles.sectionTitleList}>Apps</Text>
             {renderList(NotificationSettingsList)}
           </View>
           <View style={styles.sectionList}>
-  <Text style={styles.sectionTitleList}>Devices</Text>
-  {renderList(DeviceAndMeasureSettingsList)}
-</View>
+            <Text style={styles.sectionTitleList}>Devices</Text>
+            {renderList(DeviceAndMeasureSettingsList)}
+          </View>
           <View style={styles.sectionList}>
             <Text style={styles.sectionTitleList}>Reports</Text>
             {renderList(ReportSettingsList)}
           </View>
-     
           <View style={styles.sectionList}>
             <Text style={styles.sectionTitleList}>Resources</Text>
             {renderList(ContactUsSettingsList)}
           </View>
-     
         </View>
 
         <View style={styles.container}>
@@ -273,12 +265,11 @@ const SettingsScreen = (props) => {
               }
             />
           </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Version {AppData["expo"]["version"]}
-          </Text>
-        </View>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Version {AppData["expo"]["version"]}
+            </Text>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -314,12 +305,9 @@ const mapDispatchToProps = (dispatch) => ({
 
 export default connect(mapStateToProps, mapDispatchToProps)(SettingsScreen);
 
-  const styles = EStyleSheet.create({
-
-  // ... (styles remain the same)
+const styles = EStyleSheet.create({
   containerList: {
     flex: 1,
-    // backgroundColor: '#000',
     padding: 10,
   },
   badge: {
@@ -348,27 +336,16 @@ export default connect(mapStateToProps, mapDispatchToProps)(SettingsScreen);
   },
   poweredByButton: {
     backgroundColor: "rgb(39,39,39)",
-    width: '90%', // Adjust this value as needed
+    width: '90%',
     justifyContent: 'center',
-  },
-
-  section: {
-    paddingBottom: RFPercentage(5),
-  },
-  sectionTitle: {
-    fontWeight: "400",
-    color: "lightgray",
-    fontSize: RFValue(14),
-    paddingLeft: 5,
-    paddingBottom: 10,
   },
   listItemContainer: {
     overflow: "hidden",
     backgroundColor: "#333333",
-    paddingVertical: 15, // Adjust this value as needed
+    paddingVertical: 15,
+    borderBottomWidth: 0, // Remove any bottom border to prevent the gap
   },
   pickerContainer: {
-    
     borderWidth: 1,
     borderRadius: 10,
     borderColor: "white",
@@ -389,12 +366,10 @@ export default connect(mapStateToProps, mapDispatchToProps)(SettingsScreen);
   container: {
     marginBottom: RFValue(10),
     shadowColor: "$cardColor",
-
     shadowOffset: {
       width: 0,
       height: 1,
     },
-
     shadowOpacity: 0.18,
     shadowRadius: 1.0,
     elevation: 1,
@@ -408,7 +383,6 @@ export default connect(mapStateToProps, mapDispatchToProps)(SettingsScreen);
       width: 0,
       height: 1,
     },
-
     shadowOpacity: 0.18,
     shadowRadius: 1.0,
     elevation: 1,
@@ -458,7 +432,6 @@ export default connect(mapStateToProps, mapDispatchToProps)(SettingsScreen);
     justifyContent: "center",
     height: RFValue(50),
   },
-
   imagebox: {
     flex: 1,
     height: RFValue(80),
@@ -485,19 +458,6 @@ export default connect(mapStateToProps, mapDispatchToProps)(SettingsScreen);
     color: "$textColor",
     fontSize: RFValue(15),
     opacity: 0.5,
-  },
-  container: {
-    marginBottom: RFValue(10),
-    shadowColor: "$bgColor",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 1.0,
-    elevation: 1,
-    backgroundColor: "$cardColor",
-    borderRadius: 5,
   },
   containerSection: {
     flex: 1,
@@ -574,7 +534,6 @@ export default connect(mapStateToProps, mapDispatchToProps)(SettingsScreen);
     flex: 1,
     textAlign: "left",
     fontSize: RFValue(21),
-    //fontWeight: 'bold',
     color: "$textColor",
     paddingLeft: RFValue(8),
     opacity: 1,
@@ -598,22 +557,6 @@ export default connect(mapStateToProps, mapDispatchToProps)(SettingsScreen);
   sliderSt: {
     marginHorizontal: RFValue(40),
   },
-  // picker: {
-  //   //transform: [{scaleX: RFValue(1.3)}, {scaleY: RFValue(1.3)}],
-  //   color: "$textColor",
-  //   opacity: 1,
-  //   marginRight: RFValue(14),
-  //   width: 130,
-  //   },
-  // pickerItem: {
-  //   color: "$textColor",
-  //   height: RFValue(35),
-  //   width: RFValue(30),
-  //   fontSize: 18,
-  //   opacity: 1,
-  //   alignContent: "center",
-  //   flexDirection: "column",
-  // },
   colorCircle: {
     margin: RFValue(10),
     padding: 10,

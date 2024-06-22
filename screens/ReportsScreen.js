@@ -737,8 +737,9 @@ const styles = EStyleSheet.create({
     borderRadius: 5,
   },
   pickerItem2: {
-    fontSize: RFValue(16),
+    fontSize: RFValue(20),
     height: RFValue(85),
+    
     // height: Platform.OS === "ios" ? RFValue(180) : RFValue(50),
     color: "$textColor",
     // backgroundColor: "blue",

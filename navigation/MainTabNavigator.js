@@ -130,7 +130,7 @@ function MainTabNavigator() {
         }}
       />
       <Tab.Screen
-        name="Settings"
+        name="App"
         component={SettingsStackScreen}
       />
     </Tab.Navigator>

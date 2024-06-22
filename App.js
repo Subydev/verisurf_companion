@@ -5,6 +5,7 @@ import { PersistGate } from "redux-persist/integration/react";
 import configureStore from "./Store";
 import ThemeProvider from "./theme/ThemeProvider";
 import AppContent from "./components/AppContent";  
+import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 
 export const NotificationContext = React.createContext();
 
@@ -16,7 +17,9 @@ export default function App(props) {
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
           <ThemeProvider />
-          <AppContent />
+          <ActionSheetProvider>
+            <AppContent />
+          </ActionSheetProvider>
         </PersistGate>
       </Provider>
     </SafeAreaProvider>

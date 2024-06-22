@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, Platform } from 'react-native';
+import { View, Text, ScrollView, Platform, TouchableOpacity } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import SettingsSubPage from '../../components/SettingsSubPage';
 import { ListItem, Button } from 'react-native-elements';
@@ -9,6 +9,7 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import moment from 'moment';
+import { useActionSheet } from '@expo/react-native-action-sheet';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -56,7 +57,7 @@ async function registerForPushNotificationsAsync() {
   return token;
 }
 
-  const NotificationSettingsScreen = () => {
+const NotificationSettingsScreen = () => {
   const navigation = useNavigation();
   const [expoPushToken, setExpoPushToken] = useState('');
   const [notification, setNotification] = useState(null);
@@ -64,23 +65,47 @@ async function registerForPushNotificationsAsync() {
   const responseListener = useRef();
   const notificationCount = useSelector(state => state.count);
   const dispatch = useDispatch();
+
   const [notifications, setNotifications] = useState([
     {
       id: '1',
       title: 'Come see Verisurf at booth 223',
       subtitle: 'Visit our booth at the upcoming trade show.',
+      timestamp: moment().subtract(2, 'days').format('YYYY-MM-DD HH:mm:ss'),
     },
     {
       id: '2',
       title: 'Verisurf 2025 released!',
       subtitle: 'Check out the new features in Verisurf 2025.',
+      timestamp: moment().subtract(1, 'hour').format('YYYY-MM-DD HH:mm:ss'),
     },
     {
       id: '3',
       title: 'Verisurf Open House Tuesday, 17',
       subtitle: 'Join us for our open house event on Tuesday.',
+      timestamp: moment().subtract(30, 'minutes').format('YYYY-MM-DD HH:mm:ss'),
     },
   ]);
+  const { showActionSheetWithOptions } = useActionSheet();
+
+  const handleDeleteConfirmation = (id) => {
+    const options = ['Delete Notification', 'Cancel'];
+    const destructiveButtonIndex = 0;
+    const cancelButtonIndex = 1;
+
+    showActionSheetWithOptions(
+      {
+        options,
+        cancelButtonIndex,
+        destructiveButtonIndex,
+      },
+      (buttonIndex) => {
+        if (buttonIndex === destructiveButtonIndex) {
+          handleDelete(id);
+        }
+      }
+    );
+  };
 
   useEffect(() => {
     registerForPushNotificationsAsync().then(token => {
@@ -111,6 +136,7 @@ async function registerForPushNotificationsAsync() {
       id: receivedNotification.request.identifier,
       title: receivedNotification.request.content.title,
       subtitle: receivedNotification.request.content.body,
+      timestamp: moment().format('YYYY-MM-DD HH:mm:ss'),
     };
     setNotifications(prevNotifications => [newNotification, ...prevNotifications]);
     dispatch({ type: 'SET_NOTIFICATION_COUNT', payload: prevCount => {
@@ -119,6 +145,26 @@ async function registerForPushNotificationsAsync() {
       return newCount;
     }});
   };
+
+  const getTimeDifference = (timestamp) => {
+    const now = moment();
+    const notificationTime = moment(timestamp);
+    const duration = moment.duration(now.diff(notificationTime));
+
+    if (duration.asSeconds() < 60) {
+      return 'Just now';
+    } else if (duration.asMinutes() < 60) {
+      const minutes = Math.floor(duration.asMinutes());
+      return `${minutes}m`;
+    } else if (duration.asHours() < 24) {
+      const hours = Math.floor(duration.asHours());
+      return `${hours}h`;
+    } else {
+      const days = Math.floor(duration.asDays());
+      return `${days}d`;
+    }
+  };
+
   const handleTestNotification = async () => {
     try {
       console.log("Sending notification...");
@@ -153,7 +199,7 @@ async function registerForPushNotificationsAsync() {
         <View style={{ marginTop: 20 }}>
           <Text style={{ fontSize: RFValue(16), marginBottom: 10, color: "lightgray"}}>
             Notification History 
-                      </Text>
+          </Text>
           {notifications.map((item, index) => (
             <ListItem.Swipeable
               containerStyle={{
@@ -165,8 +211,7 @@ async function registerForPushNotificationsAsync() {
                 borderBottomLeftRadius: index === notifications.length - 1 ? 10 : 0,
                 borderBottomRightRadius: index === notifications.length - 1 ? 10 : 0,
                 paddingVertical: 15,
-                overflow: 'hidden', // Add this line
-
+                overflow: 'hidden',
               }}
               key={item.id}
               rightContent={(reset) => (
@@ -177,10 +222,12 @@ async function registerForPushNotificationsAsync() {
                     reset();
                   }}
                   icon={{ name: 'delete', color: 'white' }}
-                  buttonStyle={{ minHeight: '100%', backgroundColor: '#BE1E2D',
-                  borderTopRightRadius: index === 0 ? 10 : 0, 
-                  borderBottomRightRadius: index === notifications.length - 1 ? 10 : 0, 
-                   }}
+                  buttonStyle={{ 
+                    minHeight: '100%', 
+                    backgroundColor: '#BE1E2D',
+                    borderTopRightRadius: index === 0 ? 10 : 0, 
+                    borderBottomRightRadius: index === notifications.length - 1 ? 10 : 0, 
+                  }}
                   titleStyle={{ color: 'white' }}
                 />
               )}
@@ -195,7 +242,21 @@ async function registerForPushNotificationsAsync() {
                   {item.subtitle}
                 </ListItem.Subtitle>
               </ListItem.Content>
-              <ListItem.Chevron />
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ fontSize: RFValue(8), color: '#888888', marginBottom: 5 }}>
+                  {getTimeDifference(item.timestamp)}
+                </Text>
+                <TouchableOpacity 
+                  onPress={() => handleDeleteConfirmation(item.id)}
+                  style={{ padding: 5 }}
+                >
+                  <Ionicons 
+                    name="ellipsis-horizontal" 
+                    size={24} 
+                    color="#CCCCCC"
+                  />
+                </TouchableOpacity>
+              </View>
             </ListItem.Swipeable>
           ))}
         </View>
@@ -203,7 +264,6 @@ async function registerForPushNotificationsAsync() {
     </SettingsSubPage>
   );
 };
-
 
 async function sendPushNotification(expoPushToken) {
   const message = {
