@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabLabel: {
-    fontSize: 12,
+    fontSize: 25,
     marginTop: 4,
   },
 });

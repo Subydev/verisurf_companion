@@ -101,13 +101,13 @@ const SettingsScreen = (props) => {
   const renderList = (list) => {
     return list.map((item, i) => (
       <ListItem
-        key={i}
-        containerStyle={[
-          styles.listItemContainer,
-          i === 0 ? { borderTopLeftRadius: 10, borderTopRightRadius: 10 } : {},
-          i === list.length - 1 ? { borderBottomLeftRadius: 10, borderBottomRightRadius: 10 } : {},
-        ]}
-        onPress={() => {
+      key={i}
+      containerStyle={[
+        styles.listItemContainer,
+        i === 0 ? { borderTopLeftRadius: 10, borderTopRightRadius: 10 } : {},
+        i === list.length - 1 ? { borderBottomLeftRadius: 10, borderBottomRightRadius: 10 } : {},
+      ]}
+      onPress={() => {
           const { navigate } = props.navigation;
           const title = item.title;
           switch (title) {
@@ -141,10 +141,10 @@ const SettingsScreen = (props) => {
       >
         <Ionicons name={item.icon} size={24} color="white" />
         <ListItem.Content>
-          <ListItem.Title style={{ color: "white" }}>
-            {item.title}
-          </ListItem.Title>
-        </ListItem.Content>
+        <ListItem.Title style={{ color: "white", fontSize: RFValue(14) }}>
+          {item.title}
+        </ListItem.Title>
+      </ListItem.Content>
         {item.title === "Notifications" && notificationCount > 0 && (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{notificationCount}</Text>
@@ -326,11 +326,12 @@ const styles = EStyleSheet.create({
   },
   sectionList: {
     paddingBottom: RFPercentage(5),
+
   },
   sectionTitleList: {
     fontWeight: "400",
     color: "lightgray",
-    fontSize: RFValue(14),
+    fontSize: RFValue(20),
     paddingLeft: 5,
     paddingBottom: 10,
   },
@@ -362,6 +363,9 @@ const styles = EStyleSheet.create({
     color: "white",
     fontSize: 17,
     textAlign: "center",
+  },
+  listItemTitle: {
+    fontSize: RFValue(30), // Adjust the font size as needed
   },
   container: {
     marginBottom: RFValue(10),
