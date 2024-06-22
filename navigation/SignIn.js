@@ -55,6 +55,7 @@ class SignInScreen extends React.Component {
   };
 
 loginPressed = () => {
+  console.log("SignInScreen: Login pressed")
   if (this.state.IPAddress === '') {
     Alert.alert(
       'IP Address Blank',
@@ -90,17 +91,34 @@ loginPressed = () => {
     return;
   }
 
-    var ws = new WebSocket("ws://" + this.state.IPAddress + ":" + this.state.port);
+    if (this.state.port.length === 0) {
+      this.setState({ loading: false });
+      return;
+    }
+
+    this.connectWebSocket();
+  };
+
+  connectWebSocket = () => {
+    const { IPAddress, port } = this.state;
+    const ws = new WebSocket(`ws://${IPAddress}:${port}`);
+
     ws.onopen = () => {
       console.log('SignInScreen: WebSocket connection opened');
-      this.props.change_value_only(this.state.IPAddress, 'IPAddress');
-      this.props.change_value_only(this.state.port, 'port');
+      this.props.change_value_only(IPAddress, 'IPAddress');
+      this.props.change_value_only(port, 'port');
       this._signInAsync();
     };
 
     ws.onerror = (error) => {
       console.error('SignInScreen: WebSocket error', error);
       this.setState({ loading: false, ip_error: 'Connection error. Unable to login.', port_error: 'Connection error. Unable to login.' });
+    };
+
+    ws.onclose = (event) => {
+      console.error('SignInScreen: WebSocket connection closed', event);
+      this.setState({ loading: false });
+      Alert.alert('Connection Closed', 'The WebSocket connection was closed. Please try again.');
     };
   };
 

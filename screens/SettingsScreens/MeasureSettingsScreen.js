@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import SettingsSubPage from "../../components/SettingsSubPage";
 import EStyleSheet from "react-native-extended-stylesheet";
 import { RFPercentage, RFValue } from "react-native-responsive-fontsize";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { connect } from "react-redux";
 import { Picker } from "@react-native-picker/picker";
 import {
@@ -15,21 +14,14 @@ import {
   Linking,
   Button,
   Modal,
-  Alert,
-  TouchableHighlight,
   KeyboardAvoidingView,
+  Alert,
+  TouchableWithoutFeedback,
+  Keyboard,
+  TouchableHighlight,
   TextInput,
-
   Platform,
 } from "react-native";
-import {
-  Slider,
-  Input,
-  SocialIcon,
-  Tooltip,
-  ListItem,
-  Icon,
-} from "react-native-elements";
 import { Ionicons } from "@expo/vector-icons";
 
 import TolModal from "../../components/tolModal";
@@ -74,15 +66,6 @@ const MeasureSettingsScreen = (props) => {
     }
     
   };
-  // const submitColor = (reduxVal, hexValue) => {
-  //   var matcher = /#[0-9a-f]{6}|#[0-9a-f]{3}/gi;
-  //   var x = matcher.exec(hexValue);
-  //   if (x == null || x == undefined) {
-  //     // Handle invalid color input
-  //   } else {
-  //     change_value_only(x[0], reduxVal);
-  //   }
-  // };
 
   const validateAndSubmit = (text) => {
     const isZero = text === "0" || text === "0.0" || /^0\.0+$/.test(text) || /^0+\.0*$/.test(text);

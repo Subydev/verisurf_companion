@@ -106,7 +106,9 @@ useEffect(() => {
       
       // Check for userToken and set initial route
       const userToken = await AsyncStorage.getItem('userToken');
-      setInitialRoute(userToken ? 'App' : 'Auth');
+      setInitialRoute(userToken ? 'Auth' : 'Auth'); // switch back to APP : Auth when ready and thi shit resolved
+      // setInitialRoute(userToken ? 'App' : 'Auth');
+
       console.log('AppContent: Initial route set to', userToken ? 'App' : 'Auth');
 
     } catch (e) {

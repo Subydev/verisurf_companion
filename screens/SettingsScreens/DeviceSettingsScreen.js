@@ -14,7 +14,7 @@ const DeviceSettingsScreen = (props) => {
     change_value_only,
     dark_mode,
     decimal_places,
-    auto_response_time,
+    response_time,
     device_number
   } = props;
 
@@ -30,7 +30,7 @@ const DeviceSettingsScreen = (props) => {
   >
     <View style={{ paddingTop: 20, paddingBottom: 40 }}>
       <Text style={styles.text} numberOfLines={1} ellipsizeMode={"tail"}>
-        Response Time (ms): {auto_response_time}
+        Response Time (ms): {response_time}
       </Text>
       <Slider
         step={50}
@@ -41,8 +41,11 @@ const DeviceSettingsScreen = (props) => {
         minimumTrackTintColor={dark_mode ? "#B13034" : "black"}
         thumbStyle={{ height: 20, width: 20 }}
         minimumValue={300}
-        value={auto_response_time}
-        onValueChange={(value) => updating_value(value, "auto_response_time")}
+        value={response_time}
+        // onValueChange={(value) => updating_value(value, "response_time")}
+        onSlidingComplete={(value) => change_value_only(value, "response_time")}
+
+
       />
     </View>
 
@@ -60,7 +63,8 @@ const DeviceSettingsScreen = (props) => {
         minimumValue={1}
         value={device_number}
         step={1}
-        onValueChange={(value) => updating_value(value, "device_number")}
+        onSlidingComplete={(value) => change_value_only(value, "device_number")}
+
       />
     </View>
   </SettingsSubPage>
@@ -73,7 +77,7 @@ function mapStateToProps(state) {
     dark_mode: state.dark_mode,
     decimal_places: state.decimal_places,
     response_time: state.response_time,
-    auto_response_time: state.auto_response_time,
+    response_time: state.response_time,
     plan_number: state.plan_number,
     device_number: state.device_number,
     single_or_average: state.single_or_average,

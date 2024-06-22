@@ -1,15 +1,13 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
-  ActivityIndicator,
   Text,
   View,
   TouchableHighlight,
   Vibration,
   Alert,
   Platform,
-  TouchableOpacity,
 } from "react-native";
-import { RFPercentage, RFValue } from "react-native-responsive-fontsize";
+import { RFValue } from "react-native-responsive-fontsize";
 import { useFocusEffect } from "@react-navigation/native";
 import EStyleSheet from "react-native-extended-stylesheet";
 import { connect } from "react-redux";
@@ -20,10 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTabBarHeight } from "../components/useTabBarHeight";
 import CustomStatusBar from "../components/CustomStatusBar.js";
 
-let error_detector = true;
-
 const MeasureScreen = (props) => {
-  const [isMounted, setIsMounted] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
   const [ws, setWs] = useState(null);
 
@@ -31,13 +26,10 @@ const MeasureScreen = (props) => {
   const isFocused = useIsFocused();
   const tabBarHeight = useTabBarHeight();
   const [state, setState] = useState({
-    notification: {},
-    isLoading: true,
     measType: "",
     xEcho: "0",
     yEcho: "0",
     zEcho: "0",
-    dEcho: "0",
     dInfoEcho: "0",
     dTempEcho: "0",
     dRadiusEcho: "0",
@@ -48,85 +40,254 @@ const MeasureScreen = (props) => {
     scaler: 1,
   });
 
+
+  useEffect(() => {
+    let cleanup = () => {};
+    if (isFocused) {
+      console.log("MeasureScreen focused, initializing WebSocket");
+      isMountedRef.current = true;
+      cleanup = initializeWebSocket();
+    } else {
+      console.log("MeasureScreen unfocused, cleaning up");
+      closeWebSocket();
+    }
+    return () => {
+      console.log("Cleaning up effect");
+      cleanup();
+    };
+  }, [isFocused, initializeWebSocket, closeWebSocket]);
+
+  useEffect(() => {
+    const connectionTimeout = setTimeout(() => {
+      if (ws && ws.readyState !== WebSocket.OPEN) {
+        console.log("WebSocket connection timed out");
+        handleWebSocketError(new Error("Connection timeout"));
+      }
+    }, 5000);
+
+    return () => clearTimeout(connectionTimeout);
+  }, [ws]);
+
+
   useEffect(() => {
     console.log("Decimal places updated: ", props.decimal_places);
   }, [props.decimal_places]);
 
-  useFocusEffect(
-    useCallback(() => {
-      console.log("MeasureScreen focused");
-    console.log({underlayColor});
-      
-      console.log(props.decimal_places);
-      if (props.IPAddress === "") {
-        
-        return;
-      }
+ 
 
-      error_detector = true;
-      setState((prevState) => ({
-        ...prevState,
-        backgroundColor: EStyleSheet.value("$bgColor"),
-        underlayColor: EStyleSheet.value("$bgColor"),
-      }));
+  const isMountedRef = useRef(true);
 
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      closeWebSocket();
+    };
+  }, []);
+
+  const initializeWebSocket = useCallback(() => {
+    if (props.IPAddress && props.port) {
+      console.log(`Connecting to WebSocket at ws://${props.IPAddress}:${props.port}`);
       const newWs = new WebSocket(`ws://${props.IPAddress}:${props.port}`);
-      setWs(newWs);
-      beginStream(newWs);
-
-      return () => {
-        error_detector = false;
-        newWs.close();
+      newWs.onopen = () => {
+        console.log("WebSocket connection opened");
+        props.change_value_only("#1fcc4d", "statusColor");
+        setWs(newWs);
+        requestContinuousUpdates(newWs);
       };
-    }, [props.IPAddress, props.port, props.decimal_places])
-  );
+      newWs.onmessage = handleWebSocketMessage;
+      newWs.onerror = handleWebSocketError;
+      newWs.onclose = handleWebSocketClose;
+      console.log("WebSocket object created");
+  
+      return () => {
+        console.log("Closing WebSocket from cleanup function");
+        closeWebSocket();
+      };
+    } else {
+      console.log("Cannot initialize WebSocket: IP or port missing", { IP: props.IPAddress, port: props.port });
+      return () => {};
+    }
+  }, [props.IPAddress, props.port, requestContinuousUpdates, closeWebSocket]);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log("Response time:", props.response_time);
+  }, [props.response_time]);
+
+  const closeWebSocket = useCallback(() => {
+    console.log("Closing WebSocket");
+    if (ws) {
+
+      ws.close();
+      setWs(null);
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    // Don't set isMountedRef to false here
+  }, [ws]);
+
+  const timeoutRef = useRef(null);
+
+  const requestContinuousUpdates = useCallback((websocket) => { // Simplified
+    if (!isMountedRef.current) return;
+
+  console.log("Attempting to send device_info request. Response time:", props.response_time);
+    console.log("Attempting to send device_info request.");
+    if (websocket && websocket.readyState === WebSocket.OPEN) {
+      websocket.send(`<device_info id="${props.device_number}" />`);
+    }
+
+    timeoutRef.current = setTimeout(() => requestContinuousUpdates(websocket), props.response_time);
+  }, [props.device_number, props.response_time, isMountedRef]);
+
+  const handlePress = (pressType) => { // Combined press handlers
+    setIsPressed(pressType !== "out"); // Only set to true for initial press and long press
+
+    if (props.IPAddress && ws && ws.readyState === WebSocket.OPEN) {
+      if (pressType === "long") {
+        console.log("Sending measure_set_cloud & measure_trigger from long press");
+        ws.send("<measure_set_cloud />");
+      } else if (pressType === "out" && state.longPress === 1) {
+        console.log("Sending measure_trigger from long press out");
+        setState((prevState) => ({ ...prevState, longPress: 0 }));
+      }
+      ws.send("<measure_trigger />");
+      Vibration.vibrate([0, pressType === "long" ? 50 : 10]);
+    }
+  };
+
+  const handleWebSocketError = (error) => {
+    console.error("WebSocket error:", error);
+    props.change_value_only("red", "statusColor");
+    Alert.alert(
+      "Verisurf Connection Lost",
+      "Click retry to attempt to reconnect the app, or click sign out to return to the main screen.",
+      [
+        {
+          text: "Sign Out",
+          onPress: () => {
+            AsyncStorage.clear();
+            props.navigation.navigate("Auth");
+          },
+        },
+        {
+          text: "Retry",
+          onPress: initializeWebSocket,
+        },
+      ]
+    );
+  };
+
+  const handleWebSocketClose = (event) => {
+    console.log("WebSocket connection closed:", event.code, event.reason);
+    props.change_value_only("red", "statusColor");
+  };
+
+  const handleWebSocketMessage = useCallback((event) => {
+    if (!isMountedRef.current) return;
+  
+    console.log("WebSocket message received:", event.data);
+    
+    if (typeof event.data === 'string' && event.data.includes("device_info")) {
+      try {
+        const XMLParser = require("react-xml-parser");
+        const xml = new XMLParser().parseFromString(event.data);
+        const deviceInfo = xml.getElementsByTagName("device_info")[0];
+          
+        if (deviceInfo) {
+          const attributes = deviceInfo.attributes;
+          const xRaw = attributes["X"] || 0;
+          const yRaw = attributes["Y"] || 0;
+          const zRaw = attributes["Z"] || 0;
+          const dInfo = attributes["id"];
+          const dTempRaw = attributes["Temp"];
+          const dRadiusRaw = attributes["ProbeRadius"];
+          const dName = deviceInfo.value;
+  
+          const xVal = parseFloat(xRaw).toFixed(props.decimal_places);
+          const yVal = parseFloat(yRaw).toFixed(props.decimal_places);
+          const zVal = parseFloat(zRaw).toFixed(props.decimal_places);
+  
+          let dTemp, dRadius;
+          if (dTempRaw != null) {
+            dTemp = parseFloat(dTempRaw).toFixed(1);
+          }
+          if (dRadiusRaw != null) {
+            dRadius = parseFloat(dRadiusRaw).toFixed(3);
+          }
+  
+          if (isMountedRef.current) {
+            setState({
+              xEcho: xVal,
+              yEcho: yVal,
+              zEcho: zVal,
+              dNameEcho: dName,
+              dTempEcho: dTemp,
+              dInfoEcho: dInfo,
+              dRadiusEcho: dRadius,
+              scaler: calculateScaler(xVal, yVal, zVal),
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing WebSocket data:", error);
+      }
+    }
+  }, [props.decimal_places]);
+
+      
+
+  const calculateScaler = (xVal, yVal, zVal) => {
+    if (xVal.length > 7 || yVal.length > 7 || zVal.length > 7) {
+      const biggest = Math.max(xVal.length, yVal.length, zVal.length);
+      return parseFloat(1 - (biggest - 7) * 0.08);
+    }
+    return 1;
+  };
 
   const onPickerValueChange = (value, index) => {
     setState((prevState) => ({
       ...prevState,
       meastype: value,
+      underlayColor: value !== "none" ? "red" : EStyleSheet.value("$bgColor"),
     }));
 
-    if (value !== "none") {
-      setState((prevState) => ({
-        ...prevState,
-        underlayColor: "red",
-      }));
-      if (props.IPAddress !== "") {
-        const measSend = `<measure_${value} />`;
-        ws.send(measSend);
-      }
-    } else {
-      setState((prevState) => ({
-        ...prevState,
-        underlayColor: EStyleSheet.value("$bgColor"),
-      }));
+    if (value !== "none" && props.IPAddress !== "" && ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(`<measure_${value} />`);
     }
   };
 
   const onPress = () => {
     setIsPressed(true);
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
-      underlayColor: "red"
+      underlayColor: "red",
     }));
-    console.log({underlayColor})
-    
+
     if (props.IPAddress !== "" && ws && ws.readyState === WebSocket.OPEN) {
       ws.send(`<measure_set_${props.single_or_average} />`);
       ws.send("<measure_trigger />");
       Vibration.vibrate([0, 10]);
     }
   };
+
   const onPressOut = () => {
     setIsPressed(false);
-    setState(prevState => ({
+    setState((prevState) => ({
       ...prevState,
-      underlayColor: EStyleSheet.value("$bgColor")
+      underlayColor: EStyleSheet.value("$bgColor"),
     }));
-    console.log({underlayColor})
 
-    
     if (
       state.longPressed === 1 &&
       props.IPAddress !== "" &&
@@ -144,12 +305,10 @@ const MeasureScreen = (props) => {
 
   const onLongPress = () => {
     setIsPressed(true);
-    console.log(":LONG PRESSED");
-    
+    console.log("LONG PRESSED");
+
     if (props.IPAddress !== "" && ws && ws.readyState === WebSocket.OPEN) {
-      console.log(
-        "Sending measure_set_cloud & measure_trigger from long press"
-      );
+      console.log("Sending measure_set_cloud & measure_trigger from long press");
       ws.send("<measure_set_cloud />");
       ws.send("<measure_trigger />");
       Vibration.vibrate([0, 50]);
@@ -160,210 +319,109 @@ const MeasureScreen = (props) => {
     }
   };
 
-  const beginStream = (newWs) => {
-    setIsMounted(true);
-    setState((prevState) => ({
-      ...prevState,
-      meastype: "none",
-    }));
-
-    newWs.onopen = () => {
-      props.change_value_only("#1fcc4d", "statusColor");
-      newWs.send(`<device_info id="${props.device_number}" />`);
-    };
-
-    if (isMounted && props.IPAddress !== "") {
-      console.log("mounted on MEasure")
-      newWs.onmessage = ({ data }) => {
-        if (data.includes("device_info")) {
-          const XMLParser = require("react-xml-parser");
-          const info = new XMLParser()
-            .parseFromString(data)
-            .getElementsByTagName("device_info");
-          const attributes = info[0]["attributes"];
-          const xRaw = attributes["X"] || 0;
-          const yRaw = attributes["Y"] || 0;
-          const zRaw = attributes["Z"] || 0;
-          const dInfo = attributes["id"];
-          const dTempRaw = attributes["Temp"];
-          const dRadiusRaw = attributes["ProbeRadius"];
-          const dName = info[0]["value"];
-
-          const xVal = parseFloat(xRaw).toFixed(props.decimal_places);
-          const yVal = parseFloat(yRaw).toFixed(props.decimal_places);
-          const zVal = parseFloat(zRaw).toFixed(props.decimal_places);
-
-          let dTemp, dRadius;
-          if (dTempRaw != null) {
-            dTemp = parseFloat(dTempRaw).toFixed(1);
-          }
-
-          if (dRadiusRaw != null) {
-            dRadius = parseFloat(dRadiusRaw).toFixed(3);
-          }
-          if (xVal.length > 7 || yVal.length > 7 || zVal.length > 7) {
-            const biggest =
-              xVal.length > yVal.length
-                ? xVal.length > zVal.length
-                  ? xVal.length
-                  : zVal.length
-                : yVal.length > zVal.length
-                ? yVal.length
-                : zVal.length;
-            setState((prevState) => ({
-              ...prevState,
-              scaler: parseFloat(1 - (biggest - 7) * 0.08),
-            }));
-          } else {
-            setState((prevState) => ({
-              ...prevState,
-              scaler: 1,
-            }));
-          }
-          setState((prevState) => ({
-            ...prevState,
-            xEcho: xVal,
-            yEcho: yVal,
-            zEcho: zVal,
-            dNameEcho: dName,
-            dTempEcho: dTemp,
-            dInfoEcho: dInfo,
-            dRadiusEcho: dRadius,
-          }));
-          setTimeout(() => {
-            if (isMounted) {
-              newWs.send(<device_info id="${props.device_number}" />);
-            }
-          }, props.response_time);
-        }
-      };
-    }
-  };
-
-  // useEffect(() => {
-    
-  //   if (props.statusColor === "red") {
-  //     setState((prevState) => ({
-  //       ...prevState,
-  //       underlayColor: EStyleSheet.value("$bgColor"),
-  //     }));
-  //   } else if (props.statusColor !== "red" && state.meastype !== "none") {
-  //     setState((prevState) => ({
-  //       ...prevState,
-  //       underlayColor: "red",
-  //     }));
-  //   }
-  // }, [props.statusColor, state.meastype]);
-
   const {
     xEcho,
     yEcho,
     zEcho,
-    dNameEcho,
-    dInfoEcho,
-    dTempEcho,
-    dRadiusEcho,
     meastype,
-    backgroundColor,
     underlayColor,
     scaler,
   } = state;
 
-return (
-  <View style={styles.container}>
-    <View
-      style={[
-        styles.contentContainer,
-        { paddingTop: insets.top, paddingBottom: insets.bottom + 80 },
-      ]}
-    >
-      <View style={styles.headerContainer}>
-        <Text style={styles.footerTitle}>
-          Tap - Single | Hold - Continuous
-        </Text>
-      </View>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={meastype}
-          itemStyle={styles.pickerItem}
-          style={styles.pickerStyle}
-          onValueChange={onPickerValueChange}
-        >
-          <Picker.Item label={"Select Feature Type..."} value={"none"} />
-          <Picker.Item label={"Point"} value={"point"} />
-          <Picker.Item label={"Line"} value={"line"} />
-          <Picker.Item label={"Circle"} value={"circle"} />
-          <Picker.Item label={"Spline"} value={"spline"} />
-          <Picker.Item label={"Ellipse"} value={"ellipse"} />
-          <Picker.Item label={"Slot"} value={"slot"} />
-          <Picker.Item label={"Plane"} value={"plane"} />
-          <Picker.Item label={"Sphere"} value={"sphere"} />
-          <Picker.Item label={"Cylinder"} value={"cylinder"} />
-          <Picker.Item label={"Cone"} value={"cone"} />
-        </Picker>
-      </View>
-      <View style={styles.container}>
-        <TouchableHighlight
-          style={[
-            styles.coordinatesContainer,
-            isPressed && styles.coordinatesContainerPressed,
-          ]}
-          onPress={onPress}
-          onPressOut={onPressOut}
-          onLongPress={onLongPress}
-          delayLongPress={500}
-          activeOpacity={1}
-          underlayColor={isPressed ? "red" : EStyleSheet.value("$bgColor")}
-        >
-          <View style={styles.coordinatesContent}>
-            <View style={styles.droLeftBox}>
-              <Text style={styles.droText}>X:</Text>
-              <Text style={styles.droText}>Y:</Text>
-              <Text style={styles.droText}>Z:</Text>
+  return (
+    <View style={styles.container}>
+      <View
+        style={[
+          styles.contentContainer,
+          { paddingTop: insets.top, paddingBottom: insets.bottom + 80 },
+        ]}
+      >
+        <View style={styles.headerContainer}>
+          <Text style={styles.footerTitle}>
+            Tap - Single | Hold - Continuous
+          </Text>
+        </View>
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={meastype}
+            itemStyle={styles.pickerItem}
+            style={styles.pickerStyle}
+            onValueChange={onPickerValueChange}
+          >
+            <Picker.Item label={"Select Feature Type..."} value={"none"} />
+            <Picker.Item label={"Point"} value={"point"} />
+            <Picker.Item label={"Line"} value={"line"} />
+            <Picker.Item label={"Circle"} value={"circle"} />
+            <Picker.Item label={"Spline"} value={"spline"} />
+            <Picker.Item label={"Ellipse"} value={"ellipse"} />
+            <Picker.Item label={"Slot"} value={"slot"} />
+            <Picker.Item label={"Plane"} value={"plane"} />
+            <Picker.Item label={"Sphere"} value={"sphere"} />
+            <Picker.Item label={"Cylinder"} value={"cylinder"} />
+            <Picker.Item label={"Cone"} value={"cone"} />
+          </Picker>
+        </View>
+        <View style={styles.container}>
+          <TouchableHighlight
+            style={[
+              styles.coordinatesContainer,
+              isPressed && styles.coordinatesContainerPressed,
+            ]}
+            onPress={() => handlePress("single")}
+            onPressOut={() => handlePress("out")}
+            onLongPress={() => handlePress("long")}
+            delayLongPress={500}
+            activeOpacity={1}
+            underlayColor={isPressed ? "red" : EStyleSheet.value("$bgColor")}
+          >
+            <View style={styles.coordinatesContent}>
+              <View style={styles.droLeftBox}>
+                <Text style={styles.droText}>X:</Text>
+                <Text style={styles.droText}>Y:</Text>
+                <Text style={styles.droText}>Z:</Text>
+              </View>
+              <View style={styles.droRightBox}>
+                <Text
+                  adjustsFontSizeToFit={true}
+                  numberOfLines={1}
+                  style={[
+                    styles.coordinateValue,
+                    { fontSize: RFValue(59) * scaler },
+                  ]}
+                >
+                  {props.IPAddress === "" ? "18.7101" : xEcho}
+                </Text>
+                <Text
+                  adjustsFontSizeToFit={true}
+                  numberOfLines={1}
+                  style={[
+                    styles.coordinateValue,
+                    { fontSize: RFValue(59) * scaler },
+                  ]}
+                >
+                  {props.IPAddress === "" ? "32.1902" : yEcho}
+                </Text>
+                <Text
+                  adjustsFontSizeToFit={true}
+                  numberOfLines={1}
+                  style={[
+                    styles.coordinateValue,
+                    { fontSize: RFValue(59) * scaler },
+                  ]}
+                >
+                  {props.IPAddress === "" ? "-4.0199" : zEcho}
+                </Text>
+              </View>
             </View>
-            <View style={styles.droRightBox}>
-              <Text
-                adjustsFontSizeToFit={true}
-                numberOfLines={1}
-                style={[
-                  styles.coordinateValue,
-                  { fontSize: RFValue(59) * scaler },
-                ]}
-              >
-                {props.IPAddress === "" ? "18.7101" : xEcho}
-              </Text>
-              <Text
-                adjustsFontSizeToFit={true}
-                numberOfLines={1}
-                style={[
-                  styles.coordinateValue,
-                  { fontSize: RFValue(59) * scaler },
-                ]}
-              >
-                {props.IPAddress === "" ? "32.1902" : yEcho}
-              </Text>
-              <Text
-                adjustsFontSizeToFit={true}
-                numberOfLines={1}
-                style={[
-                  styles.coordinateValue,
-                  { fontSize: RFValue(59) * scaler },
-                ]}
-              >
-                {props.IPAddress === "" ? "-4.0199" : zEcho}
-              </Text>
-            </View>
-          </View>
-        </TouchableHighlight>
+          </TouchableHighlight>
+        </View>
       </View>
+      <CustomStatusBar
+        IPAddress={props.IPAddress}
+        statusColor={props.statusColor}
+      />
     </View>
-    <CustomStatusBar
-      IPAddress={props.IPAddress}
-      statusColor={props.statusColor}
-    />
-  </View>
-);
-
+  );
 };
 
 MeasureScreen.navigationOptions = {
@@ -390,6 +448,7 @@ const mapDispatchToProps = (dispatch) => ({
 export default connect(mapStateToProps, mapDispatchToProps)(MeasureScreen);
 
 const styles = EStyleSheet.create({
+  // ... (styles remain unchanged)
   container: {
     flex: 1,
     backgroundColor: "$bgColor",
@@ -408,13 +467,11 @@ const styles = EStyleSheet.create({
     fontSize: RFValue(16),
     height: RFValue(85),
     // backgroundColor: "orange",
-    
   },
   coordinatesContainer: {
     flex: 1,
-    marginTop: Platform.OS === "ios" ?  RFValue(-6) : RFValue(-10),
+    marginTop: Platform.OS === "ios" ? RFValue(-6) : RFValue(-10),
     backgroundColor: "$bgColor",
-
   },
 
   coordinatesContent: {
@@ -431,7 +488,6 @@ const styles = EStyleSheet.create({
     justifyContent: "center",
     paddingVertical: RFValue(19),
     // backgroundColor:"yellow",
-
   },
   pickerContainer: {
     marginBottom: Platform.OS === "ios" ? RFValue(-100) : RFValue(10),
@@ -470,11 +526,9 @@ const styles = EStyleSheet.create({
   footerTitle: {
     color: "$textColor",
     fontSize: RFValue(18),
-
   },
   touchableContainer: {
     flex: 1,
-    
   },
   statusFooter: {
     left: 0,

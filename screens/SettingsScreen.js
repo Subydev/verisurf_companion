@@ -54,8 +54,8 @@ const SettingsScreen = (props) => {
   const [ootPosCol, setOotPosCol] = useState("");
   const [ootNegCol, setOotNegCol] = useState("");
   const [opacityLevel, setOpacityLevel] = useState(1);
-  // const notificationCount = useSelector(state => state.count);
-  const notificationCount = 2;
+  const notificationCount = useSelector(state => state.count);
+  // const notificationCount = 2;
 
 
 
@@ -71,34 +71,6 @@ const SettingsScreen = (props) => {
   const _signOutAsync = async () => {
     await AsyncStorage.removeItem("userToken");
     props.navigation.navigate("Auth");
-  };
-
-  const submitColor = (reduxVal, hexValue) => {
-    const matcher = /#[0-9a-f]{6}|#[0-9a-f]{3}/gi;
-    const x = matcher.exec(hexValue);
-    if (x == null || x == undefined) {
-      if (inTolText.current.isFocused()) {
-        inTolText.current.shake();
-        inTolText.current.clear();
-      } else if (ootPosText.current.isFocused()) {
-        ootPosText.current.shake();
-        ootPosText.current.clear();
-      } else {
-        ootNegText.current.shake();
-        ootNegText.current.clear();
-      }
-    } else {
-      props.change_value_only(x[0], reduxVal);
-    }
-  };
-
-  const textFocused = () => {
-    if (myRef.current) {
-      myRef.current.scrollTo({
-        y: heightHelper + screenHeight / 5,
-        animated: true,
-      });
-    }
   };
 
   const renderList = (list) => {
@@ -347,7 +319,7 @@ const styles = EStyleSheet.create({
     overflow: "hidden",
     backgroundColor: "#333333",
     paddingVertical: 15,
-    borderBottomWidth: 0, // Remove any bottom border to prevent the gap
+    borderBottomWidth: 0, 
   },
   pickerContainer: {
     borderWidth: 1,
@@ -368,7 +340,7 @@ const styles = EStyleSheet.create({
     textAlign: "center",
   },
   listItemTitle: {
-    fontSize: RFValue(30), // Adjust the font size as needed
+    fontSize: RFValue(30), 
   },
   container: {
     marginBottom: RFValue(10),

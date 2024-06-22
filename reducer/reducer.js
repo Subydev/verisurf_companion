@@ -26,8 +26,8 @@ const initialState = {
 
 //The reducer ..reduces.. your function calls to figure out what you want to do with state.
 const reducer = (state = initialState, action) => {
-    console.log('Reducer - Current State:', state);
-    console.log('Reducer - Action:', action);
+    // console.log('Reducer - Current State:', state);
+    // console.log('Reducer - Action:', action);
   switch (action.type) {
     case 'persist/REHYDRATE':
             console.log('Rehydrating state:', action.payload);
@@ -67,6 +67,7 @@ const reducer = (state = initialState, action) => {
     case "CHANGE_THEME":
       return state;
     case "CHANGE_VALUE":
+      console.log(`Updating ${action.name} to ${action.value}`);
       return {
         ...state,
         [action.name]: action.value,

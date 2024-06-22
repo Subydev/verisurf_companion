@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Alert,
   Switch,
-  
 } from "react-native";
 import { RFPercentage, RFValue } from "react-native-responsive-fontsize";
 import { useIsFocused } from "@react-navigation/native";
@@ -17,7 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CustomStatusBar from "../components/CustomStatusBar.js";
 import { useTabBarHeight } from "../components/useTabBarHeight";
 import { Dimensions } from "react-native";
-import * as ScreenOrientation from 'expo-screen-orientation';
+import * as ScreenOrientation from "expo-screen-orientation";
 
 import EStyleSheet from "react-native-extended-stylesheet";
 
@@ -53,7 +52,7 @@ const BuildScreen = (props) => {
   const [simulationInterval, setSimulationInterval] = useState(null);
 
   const [isLandscape, setIsLandscape] = useState(false);
-  
+
   useEffect(() => {
     async function logOrientation() {
       const orientation = await ScreenOrientation.getOrientationAsync();
@@ -66,18 +65,20 @@ const BuildScreen = (props) => {
     console.log("Setting up orientation listener");
     ScreenOrientation.unlockAsync()
       .then(() => console.log("Orientation unlocked"))
-      .catch(err => console.error("Failed to unlock orientation", err));
-    
-    const subscription = ScreenOrientation.addOrientationChangeListener((event) => {
-      console.log("Orientation change event received", event);
-      handleOrientationChange(event);
-    });
+      .catch((err) => console.error("Failed to unlock orientation", err));
+
+    const subscription = ScreenOrientation.addOrientationChangeListener(
+      (event) => {
+        console.log("Orientation change event received", event);
+        handleOrientationChange(event);
+      }
+    );
     return () => {
       console.log("Cleaning up orientation listener");
       ScreenOrientation.removeOrientationChangeListener(subscription);
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP)
         .then(() => console.log("Orientation locked to portrait"))
-        .catch(err => console.error("Failed to lock orientation", err));
+        .catch((err) => console.error("Failed to lock orientation", err));
     };
   }, []);
 
@@ -86,17 +87,18 @@ const BuildScreen = (props) => {
   const handleOrientationChange = (event) => {
     console.log("Orientation changed", event);
     const { orientationInfo } = event;
-    const newIsLandscape = 
-      orientationInfo.orientation === ScreenOrientation.Orientation.LANDSCAPE_LEFT ||
-      orientationInfo.orientation === ScreenOrientation.Orientation.LANDSCAPE_RIGHT;
-    
+    const newIsLandscape =
+      orientationInfo.orientation ===
+        ScreenOrientation.Orientation.LANDSCAPE_LEFT ||
+      orientationInfo.orientation ===
+        ScreenOrientation.Orientation.LANDSCAPE_RIGHT;
+
     setIsLandscape(newIsLandscape);
-    setRenderKey(prev => prev + 1); // Force re-render
+    setRenderKey((prev) => prev + 1); // Force re-render
   };
 
   useEffect(() => {
     if (isFocused) {
-      // console.log("found isFocused attempting SetupConnection()");
       cleanupConnection();
       setupConnection();
     } else {
@@ -114,10 +116,11 @@ const BuildScreen = (props) => {
     props.oot_pos_color,
     props.oot_neg_color,
     props.device_number,
+    props.response_time,
   ]);
   const setupConnection = useCallback(() => {
     console.log("BuildScreen: setupConnection");
-
+    console.log("Current response time:", props.response_time);
     if (props.buildTutorial === false) {
       Alert.alert(
         "Check Tolerance!",
@@ -154,20 +157,10 @@ const BuildScreen = (props) => {
   };
 
   const simulateData = () => {
-    console.log("BuildScreen: simulateData decimal  =", props.decimal_places);
     console.log(
-      "BuildScreen: simulateData decimoot_neg_coloral  =",
-      props.oot_neg_color
+      "BuildScreen: simulateData response_time =",
+      props.response_time
     );
-    console.log(
-      "BuildScreen: simulateData oot_neg_color  =",
-      props.oot_neg_color
-    );
-    console.log(
-      "BuildScreen: simulateData oot_neg_color  =",
-      props.oot_neg_color
-    );
-
     return setInterval(() => {
       const generateRandomValue = () => {
         const randomValue = Math.random() * 0.005 + 0.004;
@@ -222,7 +215,7 @@ const BuildScreen = (props) => {
         negProgColor: negProgColor,
         negTol: negTol,
       }));
-    }, 500);
+    }, props.response_time);
   };
 
   const onPress = () => {
@@ -257,25 +250,25 @@ const BuildScreen = (props) => {
   const getDynamicStyles = () => ({
     droRightBox: {
       flex: 1,
-      flexDirection: 'column',
+      flexDirection: "column",
       borderWidth: 0,
-      borderColor: EStyleSheet.value('$textColor'),
+      borderColor: EStyleSheet.value("$textColor"),
       paddingTop: isLandscape ? 0 : RFValue(20),
-      justifyContent: isLandscape ? 'center' : 'space-around',
-      alignItems: isLandscape ? 'center' : 'flex-end',
+      justifyContent: isLandscape ? "center" : "space-around",
+      alignItems: isLandscape ? "center" : "flex-end",
     },
     d3Text: {
       fontVariant: ["tabular-nums"],
       fontSize: isLandscape ? RFPercentage(40) : RFValue(60),
       color: state.ootEcho,
-      textAlign: 'center',
+      textAlign: "center",
     },
     landscapeContainer: {
       flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      width: '100%',
-      height: '100%',
+      justifyContent: "center",
+      alignItems: "center",
+      width: "100%",
+      height: "100%",
       paddingLeft: insets.left,
       paddingRight: insets.right,
     },
@@ -290,7 +283,7 @@ const BuildScreen = (props) => {
         disconnected: false,
       }));
       newWs.send("<build />");
-      newWs.send('<device_info id="' + props.device_number + '" />');
+      sendDeviceInfoRequest(newWs);
     };
 
     newWs.onmessage = ({ data }) => {
@@ -399,25 +392,35 @@ const BuildScreen = (props) => {
           negProgColor: negProg,
           negTol: negProgVal,
         }));
+        sendDeviceInfoRequest(newWs);
+
       }
     };
   };
 
+  const sendDeviceInfoRequest = (webSocket) => {
+    setTimeout(() => {
+      if (webSocket.readyState === WebSocket.OPEN) {
+        webSocket.send(`<device_info id="${props.device_number}" />`);
+      }
+    }, props.response_time);
+  };
+
   return (
     <View style={styles.container} key={renderKey}>
-    <View
-      style={[
-        styles.contentContainer,
-        isLandscape ? styles.landscapeContentContainer : null,
-        { 
-          paddingTop: isLandscape ? insets.top : insets.top, 
-          paddingBottom: isLandscape ? insets.bottom : insets.bottom + 80,
-          paddingLeft: isLandscape ? insets.left : 0,
-          paddingRight: isLandscape ? insets.right : 0,
-        },
-      ]}
-    >
-      <TouchableHighlight
+      <View
+        style={[
+          styles.contentContainer,
+          isLandscape ? styles.landscapeContentContainer : null,
+          {
+            paddingTop: isLandscape ? insets.top : insets.top,
+            paddingBottom: isLandscape ? insets.bottom : insets.bottom + 80,
+            paddingLeft: isLandscape ? insets.left : 0,
+            paddingRight: isLandscape ? insets.right : 0,
+          },
+        ]}
+      >
+        <TouchableHighlight
           underlayColor={state.underlayColor}
           onPress={onPress}
           onPressOut={onPressOut}
@@ -446,7 +449,9 @@ const BuildScreen = (props) => {
                 <View style={{ flexDirection: "row" }}>
                   <View style={{ flex: 1, transform: [{ rotateY: "180deg" }] }}>
                     <View style={{ flexDirection: "row" }}>
-                      <View style={{ flex: 1, transform: [{ rotateY: "180deg" }] }}>
+                      <View
+                        style={{ flex: 1, transform: [{ rotateY: "180deg" }] }}
+                      >
                         <Bar
                           progress={parseFloat(state.negTol)}
                           width={null}
@@ -485,23 +490,57 @@ const BuildScreen = (props) => {
             <View style={{ flexDirection: "row", flex: 1 }}>
               {!isLandscape && (
                 <View style={styles.droLeftBox}>
-                  <Text adjustsFontSizeToFit={true} style={styles.droText}>DX:</Text>
-                  <Text adjustsFontSizeToFit={true} style={styles.droText}>DY:</Text>
-                  <Text adjustsFontSizeToFit={true} style={styles.droText}>DZ:</Text>
-                  <Text adjustsFontSizeToFit={true} style={styles.droText}>3D:</Text>
+                  <Text adjustsFontSizeToFit={true} style={styles.droText}>
+                    DX:
+                  </Text>
+                  <Text adjustsFontSizeToFit={true} style={styles.droText}>
+                    DY:
+                  </Text>
+                  <Text adjustsFontSizeToFit={true} style={styles.droText}>
+                    DZ:
+                  </Text>
+                  <Text adjustsFontSizeToFit={true} style={styles.droText}>
+                    3D:
+                  </Text>
                 </View>
               )}
               <View style={[styles.droRightBox, dynamicStyles.droRightBox]}>
                 {!isLandscape ? (
                   <>
-                    <Text numberOfLines={1} style={[styles.droValue, { color: state.xdColor }]}>{state.xdEcho}</Text>
-                    <Text numberOfLines={1} style={[styles.droValue, { color: state.ydColor }]}>{state.ydEcho}</Text>
-                    <Text numberOfLines={1} style={[styles.droValue, { color: state.zdColor }]}>{state.zdEcho}</Text>
-                    <Text numberOfLines={1} style={[styles.droValue, { color: state.ootEcho }]}>{state.d3Echo}</Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[styles.droValue, { color: state.xdColor }]}
+                    >
+                      {state.xdEcho}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[styles.droValue, { color: state.ydColor }]}
+                    >
+                      {state.ydEcho}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[styles.droValue, { color: state.zdColor }]}
+                    >
+                      {state.zdEcho}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      style={[styles.droValue, { color: state.ootEcho }]}
+                    >
+                      {state.d3Echo}
+                    </Text>
                   </>
                 ) : (
                   <View style={dynamicStyles.landscapeContainer}>
-                    <Text numberOfLines={1} adjustsFontSizeToFit={true} style={dynamicStyles.d3Text}>{state.d3Echo}</Text>
+                    <Text
+                      numberOfLines={1}
+                      adjustsFontSizeToFit={true}
+                      style={dynamicStyles.d3Text}
+                    >
+                      {state.d3Echo}
+                    </Text>
                   </View>
                 )}
               </View>
@@ -563,8 +602,8 @@ const styles = EStyleSheet.create({
   },
   landscapeContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   // landscapeContentContainer: {
   //   flex: 1,
