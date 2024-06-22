@@ -186,20 +186,20 @@ const NotificationSettingsScreen = () => {
       containercardColor="transparent"
       containerPadding={10}
       containerWidth="95%"
-      title="Notification Settings"
+      title="Notifications"
       navigation={navigation}
     >
       <ScrollView>
-        <View style={{ alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+        {/* <View style={{ alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
           <Button 
             title="Press to Send Notification" 
             onPress={handleTestNotification}
           />
-        </View>
+        </View> */}
         <View style={{ marginTop: 20 }}>
-          <Text style={{ fontSize: RFValue(16), marginBottom: 10, color: "lightgray"}}>
+          {/* <Text style={{ fontSize: RFValue(16), marginBottom: 10, color: "lightgray"}}>
             Notification History 
-          </Text>
+          </Text> */}
           {notifications.map((item, index) => (
             <ListItem.Swipeable
               containerStyle={{

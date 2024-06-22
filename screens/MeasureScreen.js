@@ -173,6 +173,7 @@ const MeasureScreen = (props) => {
     };
 
     if (isMounted && props.IPAddress !== "") {
+      console.log("mounted on MEasure")
       newWs.onmessage = ({ data }) => {
         if (data.includes("device_info")) {
           const XMLParser = require("react-xml-parser");

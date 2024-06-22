@@ -214,7 +214,7 @@ loginPressed = () => {
   _signInAsync = async () => {
     console.log('SignInScreen: Signing in asynchronously');
     await AsyncStorage.setItem('userToken', 'abc');
-    this.props.navigation.navigate('AuthLoading');
+    this.props.navigation.replace('App');
   };
 }
 

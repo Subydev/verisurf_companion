@@ -10,12 +10,26 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import EStyleSheet from "react-native-extended-stylesheet";
 import { Asset } from 'expo-asset';
 
-
-import MainTabNavigator from "../navigation/MainTabNavigator";
+import AppNavigator from "../navigation/AppNavigator"; // Import AppNavigator
 import { NotificationContext } from "../App";
 import dark from "../theme/dark";
 import light from "../theme/light";
 
+
+import MainTabNavigator from "../navigation/MainTabNavigator";
+
+
+const checkAuthStatus = async () => {
+  try {
+    const userToken = await AsyncStorage.getItem('userToken');
+    setInitialRoute(userToken ? 'App' : 'Auth');
+  } catch (e) {
+    console.error("Error checking auth status:", e);
+    setInitialRoute('Auth');
+  } finally {
+    setIsNavigationReady(true);
+  }
+};
 async function registerForPushNotificationsAsync() {
   let token;
   if (Device.isDevice) {
@@ -69,29 +83,42 @@ async function sendPushNotification(expoPushToken) {
 }
 
 const AppContent = () => {
+  console.log('AppContent: Rendering start');
+
   const dispatch = useDispatch();
   const [appIsReady, setAppIsReady] = useState(false);
   const [expoPushToken, setExpoPushToken] = useState('');
   const [notification, setNotification] = useState(false);
   const notificationListener = useRef();
   const responseListener = useRef();
+  const [initialRoute, setInitialRoute] = useState('AuthLoading');
+  const [isNavigationReady, setIsNavigationReady] = useState(false);
 
-  useEffect(() => {
-    async function prepare() {
-      try {
-        await SplashScreen.preventAutoHideAsync();
-        await loadResourcesAsync();
-        await setupAsyncStorage();
-        await setTheme();
-      } catch (e) {
-        console.error("AppContent: Error during preparation", e);
-      } finally {
-        setAppIsReady(true);
-      }
-    }
+useEffect(() => {
+  async function prepare() {
+    console.log('AppContent: Prepare start');
 
-    prepare();
-  }, []);
+    try {
+      await SplashScreen.preventAutoHideAsync();
+      await loadResourcesAsync();
+      await setupAsyncStorage();
+      await setTheme();
+      
+      // Check for userToken and set initial route
+      const userToken = await AsyncStorage.getItem('userToken');
+      setInitialRoute(userToken ? 'App' : 'Auth');
+      console.log('AppContent: Initial route set to', userToken ? 'App' : 'Auth');
+
+    } catch (e) {
+      console.error("AppContent: Error during preparation", e);
+    } finally {
+      setAppIsReady(true);
+      setIsNavigationReady(true);
+      console.log('AppContent: Prepare end, app is ready');    }
+  }
+
+  prepare();
+}, []);
 
   useEffect(() => {
     registerForPushNotificationsAsync().then(token => {
@@ -120,16 +147,15 @@ const AppContent = () => {
     }
   }, [appIsReady]);
 
-  if (!appIsReady) {
+  if (!appIsReady || !isNavigationReady) {
     return null;
   }
-
   return (
     <NotificationContext.Provider value={{ expoPushToken, notification, sendPushNotification }}>
       <View style={styles.container} onLayout={onLayoutRootView}>
         {Platform.OS === "ios" && <StatusBar barStyle="default" />}
         <NavigationContainer>
-          <MainTabNavigator />
+        <AppNavigator initialRoute={initialRoute} />
         </NavigationContainer>
       </View>
     </NotificationContext.Provider>

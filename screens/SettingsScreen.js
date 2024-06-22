@@ -54,7 +54,10 @@ const SettingsScreen = (props) => {
   const [ootPosCol, setOotPosCol] = useState("");
   const [ootNegCol, setOotNegCol] = useState("");
   const [opacityLevel, setOpacityLevel] = useState(1);
-  const notificationCount = useSelector(state => state.count);
+  // const notificationCount = useSelector(state => state.count);
+  const notificationCount = 2;
+
+
 
   const dispatch = useDispatch();
   const myRef = useRef(null);

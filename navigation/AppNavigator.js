@@ -1,37 +1,30 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StatusBar, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import EStyleSheet from 'react-native-extended-stylesheet';
 import SignInScreen from './SignIn';
 import { createStackNavigator } from '@react-navigation/stack';
 import MainTabNavigator from './MainTabNavigator';
-import * as ScreenOrientation from 'expo-screen-orientation';
 
+const AuthLoadingScreen = ({ navigation }) => {
+  useEffect(() => {
+    const bootstrapAsync = async () => {
+      console.log('AuthLoadingScreen: Checking user token');
+      const userToken = await AsyncStorage.getItem('userToken');
+      console.log('AuthLoadingScreen: User token', userToken);
+      navigation.replace(userToken ? 'App' : 'Auth');
+    };
 
-class AuthLoadingScreen extends React.Component {
-  constructor() {
-    super();
-    console.log('AuthLoadingScreen: Constructor');
-    this._bootstrapAsync();
-  }
+    bootstrapAsync();
+  }, [navigation]);
 
-  _bootstrapAsync = async () => {
-    console.log('AuthLoadingScreen: Checking user token');
-    const userToken = await AsyncStorage.getItem('userToken');
-    console.log('AuthLoadingScreen: User token', userToken);
-    this.props.navigation.navigate(userToken ? 'App' : 'Auth');
-  };
-
-  render() {
-    console.log('AuthLoadingScreen: Rendering');
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator />
-        <StatusBar barStyle="default" />
-      </View>
-    );
-  }
-}
+  return (
+    <View style={styles.container}>
+      <ActivityIndicator />
+      <StatusBar barStyle="default" />
+    </View>
+  );
+};
 
 const styles = EStyleSheet.create({
   container: {
@@ -64,20 +57,31 @@ function AppStack() {
   );
 }
 
-
-export default function AppNavigator() {
+export default function AppNavigator({ initialRoute }) {
   console.log('AppNavigator: Rendering');
+  const [isReady, setIsReady] = useState(false);
+
   useEffect(() => {
-    // Lock to portrait by default
-    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+    const prepareApp = async () => {
+      try {
+        // You can add any additional setup logic here
+        await AsyncStorage.getItem('userToken'); // This is just to ensure AsyncStorage is ready
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        setIsReady(true);
+      }
+    };
+
+    prepareApp();
   }, []);
+
+  if (!isReady) {
+    return <ActivityIndicator />;
+  }
+
   return (
-    <Stack.Navigator 
-      initialRouteName="AuthLoading" 
-      screenOptions={{ 
-        headerShown: false,
-      }}
-    >
+    <Stack.Navigator initialRouteName={initialRoute || "AuthLoading"} screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AuthLoading" component={AuthLoadingScreen} />
       <Stack.Screen name="App" component={AppStack} />
       <Stack.Screen name="Auth" component={AuthStack} />

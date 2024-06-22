@@ -20,7 +20,7 @@ const initialState = {
   oot_neg_color: "#FF0000",
   exampleInput: "",
   exampleSlider: 50,
-  count: 0,
+  count: 3,
 
 };
 
